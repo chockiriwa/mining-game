@@ -1,0 +1,211 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鉱山探索</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="game">
+
+        <!-- 上部ステータス -->
+        <header class="top-bar">
+
+            <div>
+                <h1>鉱山探索</h1>
+                <div class="sub">STEP 1 プロトタイプ</div>
+            </div>
+
+            <div class="status">
+                <div>
+                    鉱山Lv. <span id="mineLevel">1</span>
+                </div>
+
+                <div>
+                    HP
+                    <span id="hp">10</span>
+                    /
+                    <span id="maxHp">10</span>
+                </div>
+            </div>
+
+        </header>
+
+
+        <!-- ゲーム本体 -->
+        <section class="game-layout">
+
+
+            <!-- 鉱山画面 -->
+            <div class="main-panel">
+
+                <div class="panel-title">
+                    鉱山
+                </div>
+
+
+                <!-- マップ -->
+                <div
+                    id="map"
+                    class="map"
+                    aria-label="鉱山マップ">
+                </div>
+
+
+                <!-- 移動ボタン -->
+                <div class="controls">
+
+                    <button data-move="up">
+                        ↑
+                    </button>
+
+                    <div class="middle-buttons">
+
+                        <button data-move="left">
+                            ←
+                        </button>
+
+                        <button data-move="down">
+                            ↓
+                        </button>
+
+                        <button data-move="right">
+                            →
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="keyboard-help">
+                    ↑ ↓ ← → / W A S D で移動
+                </div>
+
+
+                <!-- 鉱山から出る -->
+                <button
+                    id="leaveButton"
+                    class="danger-button">
+                    鉱山から出る
+                </button>
+
+            </div>
+
+
+
+            <!-- 右側 -->
+            <aside class="side-panel">
+
+
+                <!-- ミニマップ -->
+                <section class="info-box">
+
+                    <div class="panel-title">
+                        ミニマップ
+                    </div>
+
+                    <div
+                        id="minimap"
+                        class="minimap">
+                    </div>
+
+                    <div class="legend">
+
+                        <span>
+                            ● 現在地
+                        </span>
+
+                        <span>
+                            ・ 探索済み
+                        </span>
+
+                        <span>
+                            ？ 未探索
+                        </span>
+
+                        <span>
+                            羽 帰還ポイント
+                        </span>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- 簡易ログ -->
+                <section class="info-box log-box">
+
+                    <div class="panel-title">
+                        簡易ログ
+                    </div>
+
+                    <div
+                        id="log"
+                        class="log">
+                    </div>
+
+                </section>
+
+            </aside>
+
+        </section>
+
+
+
+        <!-- メッセージ -->
+        <div
+            id="message"
+            class="message">
+        </div>
+
+
+
+        <!-- 鉱山から出る確認 -->
+        <div
+            id="leaveModal"
+            class="modal hidden">
+
+            <div class="modal-card">
+
+                <h2>
+                    鉱山から出ますか？
+                </h2>
+
+                <p>
+                    STEP 1では鉱山を終了して
+                    探索画面に戻ります。
+                </p>
+
+
+                <div class="modal-buttons">
+
+                    <button id="confirmLeave">
+                        はい
+                    </button>
+
+                    <button id="cancelLeave">
+                        いいえ
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ゲーム処理 -->
+    <script src="game.js"></script>
+
+</body>
+</html>
+```
