@@ -36896,3 +36896,585 @@ render = function() {
 
 ensureResponsiveUIStyle_STEP460();
 updateResponsiveViewport_STEP460();
+
+
+// ============================================================================
+// STEP 4-61：スマホで拠点マイナーが消える問題を修正
+// ・マイナー本体も画面幅/高さに応じて縮小
+// ・スマホでは必ず画面内へ収まるサイズにする
+// ・保存済み座標が画面外なら自動で画面内へ補正
+// ・完全に見えない場合は右下へ復帰
+// ・PCのドラッグ配置/位置保存は維持
+// ============================================================================
+
+function ensureBaseMinerResponsiveStyle_STEP461() {
+    if (
+        document.getElementById(
+            "baseMinerResponsiveStyle_STEP461"
+        )
+    ) {
+        return;
+    }
+
+    var style =
+        document.createElement(
+            "style"
+        );
+
+    style.id =
+        "baseMinerResponsiveStyle_STEP461";
+
+    style.textContent = `
+        #baseMinerWrap_STEP439 {
+            z-index: 15500 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+
+            width:
+                clamp(
+                    138px,
+                    18vw,
+                    235px
+                ) !important;
+
+            height:
+                clamp(
+                    235px,
+                    48vh,
+                    410px
+                ) !important;
+
+            max-width:
+                48vw !important;
+
+            max-height:
+                64vh !important;
+        }
+
+        #baseMinerImage_STEP439 {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+
+            width:
+                min(
+                    96%,
+                    clamp(
+                        132px,
+                        17vw,
+                        225px
+                    )
+                ) !important;
+
+            max-width:
+                100% !important;
+
+            max-height:
+                100% !important;
+
+            height:
+                auto !important;
+
+            right: 0 !important;
+            bottom: 0 !important;
+
+            object-fit: contain !important;
+            object-position:
+                right bottom !important;
+        }
+
+        #baseMinerGlow_STEP439 {
+            right:
+                clamp(
+                    2px,
+                    1vw,
+                    6px
+                ) !important;
+
+            bottom:
+                clamp(
+                    20px,
+                    5vh,
+                    38px
+                ) !important;
+
+            width:
+                82% !important;
+
+            height:
+                72% !important;
+        }
+
+        /* 吹き出しも画面外へはみ出しにくいサイズへ */
+        #baseMinerBubble_STEP439 {
+            right:
+                clamp(
+                    92px,
+                    14vw,
+                    182px
+                ) !important;
+
+            bottom:
+                clamp(
+                    150px,
+                    31vh,
+                    270px
+                ) !important;
+
+            width:
+                min(
+                    270px,
+                    58vw
+                ) !important;
+
+            max-width:
+                calc(100vw - 18px) !important;
+
+            min-height:
+                0 !important;
+
+            padding:
+                clamp(
+                    9px,
+                    1.5vw,
+                    14px
+                ) !important;
+
+            font-size:
+                clamp(
+                    11px,
+                    2.8vw,
+                    14px
+                ) !important;
+        }
+
+        @media (max-width: 700px) {
+            #baseMinerWrap_STEP439 {
+                width:
+                    clamp(
+                        120px,
+                        38vw,
+                        170px
+                    ) !important;
+
+                height:
+                    clamp(
+                        205px,
+                        42vh,
+                        300px
+                    ) !important;
+
+                max-width:
+                    44vw !important;
+
+                max-height:
+                    52vh !important;
+            }
+
+            #baseMinerImage_STEP439 {
+                width:
+                    96% !important;
+
+                max-height:
+                    100% !important;
+            }
+
+            #baseMinerBubble_STEP439 {
+                right:
+                    clamp(
+                        82px,
+                        27vw,
+                        132px
+                    ) !important;
+
+                bottom:
+                    clamp(
+                        130px,
+                        28vh,
+                        205px
+                    ) !important;
+
+                width:
+                    min(
+                        210px,
+                        61vw
+                    ) !important;
+
+                font-size:
+                    clamp(
+                        11px,
+                        3.2vw,
+                        13px
+                    ) !important;
+
+                line-height:
+                    1.55 !important;
+            }
+        }
+
+        @media (max-width: 420px) {
+            #baseMinerWrap_STEP439 {
+                width:
+                    clamp(
+                        112px,
+                        36vw,
+                        150px
+                    ) !important;
+
+                height:
+                    clamp(
+                        190px,
+                        39vh,
+                        270px
+                    ) !important;
+            }
+
+            #baseMinerBubble_STEP439 {
+                right:
+                    clamp(
+                        74px,
+                        25vw,
+                        108px
+                    ) !important;
+
+                bottom:
+                    clamp(
+                        118px,
+                        25vh,
+                        180px
+                    ) !important;
+
+                width:
+                    min(
+                        190px,
+                        59vw
+                    ) !important;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 520px) {
+            #baseMinerWrap_STEP439 {
+                width:
+                    clamp(
+                        105px,
+                        19vw,
+                        145px
+                    ) !important;
+
+                height:
+                    clamp(
+                        165px,
+                        65vh,
+                        250px
+                    ) !important;
+
+                max-height:
+                    72vh !important;
+            }
+
+            #baseMinerBubble_STEP439 {
+                right:
+                    clamp(
+                        72px,
+                        13vw,
+                        105px
+                    ) !important;
+
+                bottom:
+                    clamp(
+                        100px,
+                        38vh,
+                        160px
+                    ) !important;
+
+                width:
+                    min(
+                        190px,
+                        38vw
+                    ) !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+function keepBaseMinerInsideViewport_STEP461() {
+    if (!game.baseOpen) {
+        return;
+    }
+
+    var wrap =
+        document.getElementById(
+            "baseMinerWrap_STEP439"
+        );
+
+    if (!wrap) {
+        return;
+    }
+
+    ensureBaseMinerPositionData_STEP442();
+
+    // CSSのレスポンシブ寸法が反映された後の実寸を使う。
+    var width =
+        Math.max(
+            1,
+            wrap.offsetWidth || 1
+        );
+
+    var height =
+        Math.max(
+            1,
+            wrap.offsetHeight || 1
+        );
+
+    var viewportWidth =
+        Math.max(
+            1,
+            window.innerWidth || 1
+        );
+
+    var viewportHeight =
+        Math.max(
+            1,
+            window.innerHeight || 1
+        );
+
+    var pos =
+        game.baseMiner_STEP439.position;
+
+    // 未配置なら従来通り右下。
+    if (
+        pos.left === null ||
+        pos.top === null
+    ) {
+        wrap.style.setProperty(
+            "left",
+            "auto",
+            "important"
+        );
+
+        wrap.style.setProperty(
+            "top",
+            "auto",
+            "important"
+        );
+
+        wrap.style.setProperty(
+            "right",
+            "6px",
+            "important"
+        );
+
+        wrap.style.setProperty(
+            "bottom",
+            "2px",
+            "important"
+        );
+
+        return;
+    }
+
+    var maxLeft =
+        Math.max(
+            0,
+            viewportWidth -
+            width
+        );
+
+    var maxTop =
+        Math.max(
+            0,
+            viewportHeight -
+            height
+        );
+
+    var left =
+        Math.max(
+            0,
+            Math.min(
+                maxLeft,
+                Number(pos.left) || 0
+            )
+        );
+
+    var top =
+        Math.max(
+            0,
+            Math.min(
+                maxTop,
+                Number(pos.top) || 0
+            )
+        );
+
+    pos.left =
+        left;
+
+    pos.top =
+        top;
+
+    wrap.style.setProperty(
+        "left",
+        left + "px",
+        "important"
+    );
+
+    wrap.style.setProperty(
+        "top",
+        top + "px",
+        "important"
+    );
+
+    wrap.style.setProperty(
+        "right",
+        "auto",
+        "important"
+    );
+
+    wrap.style.setProperty(
+        "bottom",
+        "auto",
+        "important"
+    );
+
+    // 最終安全策：
+    // 何らかのCSS競合で完全に画面外なら右下へ戻す。
+    var rect =
+        wrap.getBoundingClientRect();
+
+    var visible =
+        (
+            rect.right > 0 &&
+            rect.bottom > 0 &&
+            rect.left < viewportWidth &&
+            rect.top < viewportHeight
+        );
+
+    if (!visible) {
+        wrap.style.setProperty(
+            "left",
+            "auto",
+            "important"
+        );
+
+        wrap.style.setProperty(
+            "top",
+            "auto",
+            "important"
+        );
+
+        wrap.style.setProperty(
+            "right",
+            "6px",
+            "important"
+        );
+
+        wrap.style.setProperty(
+            "bottom",
+            "2px",
+            "important"
+        );
+
+        // 次回も画面外座標を再適用しないよう初期位置扱いへ戻す。
+        pos.left =
+            null;
+
+        pos.top =
+            null;
+    }
+}
+
+
+function refreshBaseMinerResponsive_STEP461() {
+    ensureBaseMinerResponsiveStyle_STEP461();
+
+    if (!game.baseOpen) {
+        return;
+    }
+
+    appendBaseMiner_STEP439();
+
+    // レスポンシブCSS反映後に位置補正。
+    requestAnimationFrame(
+        function() {
+            keepBaseMinerInsideViewport_STEP461();
+
+            requestAnimationFrame(
+                keepBaseMinerInsideViewport_STEP461
+            );
+        }
+    );
+}
+
+
+// 拠点表示時に必ず再確認。
+const _step461_showBase =
+    showBase;
+
+showBase =
+    function(message) {
+        var result =
+            _step461_showBase(
+                message
+            );
+
+        refreshBaseMinerResponsive_STEP461();
+
+        return result;
+    };
+
+
+// 拠点UI更新後にも消失を防ぐ。
+const _step461_updateBaseUI =
+    updateBaseUI;
+
+updateBaseUI =
+    function() {
+        var result =
+            _step461_updateBaseUI();
+
+        refreshBaseMinerResponsive_STEP461();
+
+        return result;
+    };
+
+
+// 画面回転・サイズ変更時にも位置を再計算。
+if (!window.__baseMinerResponsiveEvents_STEP461) {
+    window.__baseMinerResponsiveEvents_STEP461 =
+        true;
+
+    window.addEventListener(
+        "resize",
+        function() {
+            setTimeout(
+                refreshBaseMinerResponsive_STEP461,
+                30
+            );
+        },
+        {
+            passive: true
+        }
+    );
+
+    window.addEventListener(
+        "orientationchange",
+        function() {
+            setTimeout(
+                refreshBaseMinerResponsive_STEP461,
+                120
+            );
+        },
+        {
+            passive: true
+        }
+    );
+}
+
+
+ensureBaseMinerResponsiveStyle_STEP461();
+refreshBaseMinerResponsive_STEP461();
+
