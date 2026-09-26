@@ -53780,3 +53780,366 @@ setTimeout(
     0
 );
 
+
+
+// ============================================================================
+// STEP 4-88：スマホ探索画面 2回目入坑時のDOM再配置バグ修正
+// ----------------------------------------------------------------------------
+// 原因:
+// STEP4-87は初回入坑時に map/log/minimap を mobileExploreLayout 内へ移動する。
+// その後2回目の入坑で map.parentNode を「元の親」として使うと、
+// mobileExploreLayout 自身の子孫へ mobileExploreLayout を挿入しようとして
+// HierarchyRequestError になる可能性があった。
+//
+// 修正:
+// ・探索画面の元の位置に固定アンカーを1個置く
+// ・2回目以降は map.parentNode ではなくアンカーを基準にする
+// ・既存レイアウトがある場合は再生成せず、中身だけ安全に戻す
+// ・拠点→鉱山を何回繰り返しても同じレイアウトへ復帰
+// ============================================================================
+
+
+function ensureMobileExploreAnchor_STEP488() {
+    var anchor =
+        document.getElementById(
+            "mobileExploreAnchor_STEP488"
+        );
+
+    if (anchor) {
+        return anchor;
+    }
+
+    anchor =
+        document.createElement(
+            "div"
+        );
+
+    anchor.id =
+        "mobileExploreAnchor_STEP488";
+
+    anchor.style.display =
+        "none";
+
+    var layout =
+        document.getElementById(
+            "mobileExploreLayout_STEP487"
+        );
+
+    // 既にSTEP4-87でレイアウトが作られている場合は、
+    // その直前が本来の探索画面の位置。
+    if (
+        layout &&
+        layout.parentNode
+    ) {
+        layout.parentNode.insertBefore(
+            anchor,
+            layout
+        );
+
+        return anchor;
+    }
+
+    // 初回作成前ならmapの直前を保存。
+    if (
+        mapElement &&
+        mapElement.parentNode
+    ) {
+        mapElement.parentNode.insertBefore(
+            anchor,
+            mapElement
+        );
+
+        return anchor;
+    }
+
+    return anchor;
+}
+
+
+const _step488_ensureMobileExploreLayout =
+    ensureMobileExploreLayout_STEP487;
+
+
+ensureMobileExploreLayout_STEP487 =
+    function() {
+        ensureMobileExploreLayoutStyle_STEP487();
+
+        if (
+            !isMobilePrimary_STEP485() ||
+            game.baseOpen ||
+            !mapElement ||
+            !logElement
+        ) {
+            document.body.classList.remove(
+                "mobileExplore487"
+            );
+
+            var hiddenLayout =
+                document.getElementById(
+                    "mobileExploreLayout_STEP487"
+                );
+
+            if (hiddenLayout) {
+                hiddenLayout.style.display =
+                    "none";
+            }
+
+            var hiddenDock =
+                document.getElementById(
+                    "mobileControllerDock_STEP487"
+                );
+
+            if (hiddenDock) {
+                hiddenDock.style.display =
+                    "none";
+            }
+
+            return null;
+        }
+
+        document.body.classList.add(
+            "mobileExplore487"
+        );
+
+        var anchor =
+            ensureMobileExploreAnchor_STEP488();
+
+        var layout =
+            document.getElementById(
+                "mobileExploreLayout_STEP487"
+            );
+
+        // 初回だけSTEP4-87本来の生成処理を使う。
+        if (!layout) {
+            var firstResult =
+                _step488_ensureMobileExploreLayout();
+
+            layout =
+                document.getElementById(
+                    "mobileExploreLayout_STEP487"
+                ) ||
+                firstResult;
+
+            // 生成後もアンカーが必ずレイアウトの外側にある状態へ整える。
+            anchor =
+                document.getElementById(
+                    "mobileExploreAnchor_STEP488"
+                ) ||
+                ensureMobileExploreAnchor_STEP488();
+
+            if (
+                layout &&
+                anchor &&
+                anchor.parentNode &&
+                layout.parentNode !==
+                    anchor.parentNode
+            ) {
+                anchor.parentNode.insertBefore(
+                    layout,
+                    anchor.nextSibling
+                );
+            }
+
+            return layout;
+        }
+
+
+        // ---------------------------------------------------------------
+        // 2回目以降：layoutを自分自身の子孫へ挿入しない。
+        // ---------------------------------------------------------------
+        var host =
+            anchor &&
+            anchor.parentNode
+                ? anchor.parentNode
+                : layout.parentNode;
+
+        if (
+            host &&
+            layout.parentNode !== host
+        ) {
+            host.insertBefore(
+                layout,
+                anchor
+                    ? anchor.nextSibling
+                    : host.firstChild
+            );
+        } else if (
+            host &&
+            anchor &&
+            layout.previousSibling !==
+                anchor
+        ) {
+            host.insertBefore(
+                layout,
+                anchor.nextSibling
+            );
+        }
+
+
+        var mapStage =
+            document.getElementById(
+                "mobileMapStage_STEP487"
+            );
+
+        var logColumn =
+            document.getElementById(
+                "mobileLogColumn_STEP487"
+            );
+
+        var signalSlot =
+            document.getElementById(
+                "mobileExploreSignalSlot_STEP487"
+            );
+
+
+        if (
+            mapStage &&
+            mapElement.parentNode !==
+                mapStage
+        ) {
+            mapStage.appendChild(
+                mapElement
+            );
+        }
+
+
+        if (
+            logColumn &&
+            logElement.parentNode !==
+                logColumn
+        ) {
+            logColumn.appendChild(
+                logElement
+            );
+        }
+
+
+        if (
+            mapStage &&
+            minimapElement &&
+            minimapElement.parentNode !==
+                mapStage
+        ) {
+            mapStage.appendChild(
+                minimapElement
+            );
+        }
+
+
+        var signalBar =
+            document.getElementById(
+                "importantSignalBar_STEP456"
+            );
+
+        if (
+            signalBar &&
+            signalSlot &&
+            signalBar.parentNode !==
+                signalSlot
+        ) {
+            signalSlot.appendChild(
+                signalBar
+            );
+        }
+
+
+        setupMobileControllerDock_STEP487();
+
+        layout.style.display =
+            "block";
+
+        return layout;
+    };
+
+
+// ---------------------------------------------------------------------------
+// 2回目以降に旧プロトタイプ側が前面へ出ても、探索中は専用UIを最終保証。
+// ---------------------------------------------------------------------------
+function reinforceMobileExploreLayout_STEP488() {
+    if (
+        !isMobilePrimary_STEP485() ||
+        game.baseOpen
+    ) {
+        return;
+    }
+
+    var layout =
+        ensureMobileExploreLayout_STEP487();
+
+    if (!layout) {
+        return;
+    }
+
+    layout.style.display =
+        "block";
+
+    var dock =
+        document.getElementById(
+            "mobileControllerDock_STEP487"
+        );
+
+    if (dock) {
+        dock.style.display =
+            "grid";
+    }
+
+    updateMobileExploreLayout_STEP487();
+    bindMobileMiniMapFocus_STEP487();
+}
+
+
+// 拠点を出た直後はDOM更新が複数重なるので、0ms/50msの2回保証。
+const _step488_hideBase =
+    hideBase;
+
+hideBase =
+    function() {
+        var result =
+            _step488_hideBase();
+
+        setTimeout(
+            reinforceMobileExploreLayout_STEP488,
+            0
+        );
+
+        setTimeout(
+            reinforceMobileExploreLayout_STEP488,
+            50
+        );
+
+        return result;
+    };
+
+
+// resize後も同じ固定アンカーを使用。
+const _step488_refreshMobilePrimaryUI =
+    refreshMobilePrimaryUI_STEP485;
+
+refreshMobilePrimaryUI_STEP485 =
+    function() {
+        var result =
+            _step488_refreshMobilePrimaryUI();
+
+        if (
+            isMobilePrimary_STEP485() &&
+            !game.baseOpen
+        ) {
+            reinforceMobileExploreLayout_STEP488();
+        }
+
+        return result;
+    };
+
+
+setTimeout(
+    function() {
+        if (
+            isMobilePrimary_STEP485() &&
+            !game.baseOpen
+        ) {
+            reinforceMobileExploreLayout_STEP488();
+        }
+    },
+    0
+);
+
