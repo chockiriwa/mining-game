@@ -6,7 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>鉱山探索</title>
 
-    <link rel="stylesheet" href="style.css">
+    <script>
+        // GitHub Pages / ホーム画面Webアプリの古いキャッシュ対策。
+        // 毎回異なるURLとしてstyle.cssを取得する。
+        (function () {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = "style.css?v=" + Date.now();
+            document.head.appendChild(link);
+        })();
+    </script>
 </head>
 
 <body>
@@ -204,7 +213,16 @@
 
 
     <!-- ゲーム処理 -->
-    <script src="game.js"></script>
+    <script>
+        // GitHub Pages / ホーム画面Webアプリの古いキャッシュ対策。
+        // 今後の更新は従来どおり game.js を上書きするだけでよい。
+        (function () {
+            const script = document.createElement("script");
+            script.src = "game.js?v=" + Date.now();
+            script.async = false;
+            document.body.appendChild(script);
+        })();
+    </script>
 
 </body>
 </html>
