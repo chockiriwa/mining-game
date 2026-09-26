@@ -51346,3 +51346,1015 @@ setTimeout(
     0
 );
 
+
+
+// ============================================================================
+// STEP 4-86：スマホ探索画面の視認性修正
+// ----------------------------------------------------------------------------
+// iPhone SE3縦持ちで「マップが大きすぎてHP/行動が見えない」を修正。
+// ・通常鉱山はスマホ時だけ20×20全体表示 → プレイヤー中心11×11カメラ表示
+// ・HPを常時見える専用HUDへ移動
+// ・現在地 / 決定キーでできる操作 / 直前ログをHUDへ表示
+// ・通常鉱山のミニマップは全体把握用として小さく残す
+// ・PC表示とゲームロジックは変更しない
+// ============================================================================
+
+
+// ---------------------------------------------------------------------------
+// モバイル探索HUD
+// ---------------------------------------------------------------------------
+function ensureMobileMineHudStyle_STEP486() {
+    if (
+        document.getElementById(
+            "mobileMineHudStyle_STEP486"
+        )
+    ) {
+        return;
+    }
+
+    var style =
+        document.createElement(
+            "style"
+        );
+
+    style.id =
+        "mobileMineHudStyle_STEP486";
+
+    style.textContent = `
+        #mobileMineHud_STEP486 {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            /* 旧1行ステータスは情報過多なのでスマホでは専用HUDへ置換 */
+            #playerStatus {
+                display: none !important;
+            }
+
+            #mobileMineHud_STEP486 {
+                position: sticky;
+                top: max(2px, env(safe-area-inset-top));
+                z-index: 12000;
+
+                display: block;
+                width: min(calc(100vw - 10px), 365px);
+                margin: 2px auto 5px;
+                padding: 6px 7px;
+
+                box-sizing: border-box;
+
+                border:
+                    1px solid rgba(216,190,108,.56);
+                border-radius: 7px;
+
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgba(20,23,25,.98),
+                        rgba(8,10,12,.98)
+                    );
+
+                box-shadow:
+                    0 4px 14px rgba(0,0,0,.45);
+
+                color: #eef0e8;
+                font-size: 10px;
+                line-height: 1.28;
+
+                backdrop-filter: blur(4px);
+            }
+
+            #mobileMineHudTop_STEP486 {
+                display: grid;
+                grid-template-columns:
+                    minmax(0, 1fr)
+                    auto;
+                gap: 6px;
+                align-items: center;
+            }
+
+            #mobileMineHudLocation_STEP486 {
+                min-width: 0;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+
+                color: #e5cf86;
+                font-size: 11px;
+                font-weight: 900;
+                letter-spacing: .03em;
+            }
+
+            #mobileMineHudHpText_STEP486 {
+                color: #f3f3ed;
+                font-size: 11px;
+                font-weight: 900;
+                font-variant-numeric:
+                    tabular-nums;
+                white-space: nowrap;
+            }
+
+            #mobileMineHudHpBar_STEP486 {
+                height: 5px;
+                margin-top: 4px;
+                overflow: hidden;
+
+                border:
+                    1px solid rgba(255,255,255,.12);
+                border-radius: 999px;
+
+                background: #15191c;
+            }
+
+            #mobileMineHudHpFill_STEP486 {
+                display: block;
+                height: 100%;
+                width: 100%;
+                border-radius: inherit;
+
+                background:
+                    linear-gradient(
+                        90deg,
+                        #c75048,
+                        #e0b94f,
+                        #74be79
+                    );
+
+                transform-origin: left center;
+            }
+
+            #mobileMineHudAction_STEP486 {
+                margin-top: 5px;
+                padding: 4px 6px;
+
+                border-radius: 4px;
+                background:
+                    rgba(102,123,135,.14);
+
+                color: #dce9ee;
+                font-size: 10.5px;
+                font-weight: 800;
+            }
+
+            #mobileMineHudLast_STEP486 {
+                min-height: 13px;
+                margin-top: 3px;
+
+                color: #9ca6ac;
+                font-size: 9px;
+
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
+
+            /* ------------------------------------------------------------
+               通常鉱山：11×11カメラ前提サイズ
+               ------------------------------------------------------------ */
+
+            body.mobileNormalMine_STEP486 #map {
+                width: 242px !important;
+                max-width: 242px !important;
+                min-width: 242px !important;
+
+                height: 242px !important;
+                max-height: 242px !important;
+                min-height: 242px !important;
+
+                margin: 0 auto 4px !important;
+
+                display: grid !important;
+                overflow: hidden !important;
+
+                border-width: 1px !important;
+            }
+
+            body.mobileNormalMine_STEP486 #map .tile {
+                width: auto !important;
+                height: auto !important;
+                min-width: 0 !important;
+                min-height: 0 !important;
+
+                aspect-ratio: 1 / 1;
+
+                font-size: 11px !important;
+            }
+
+            /* 全体位置確認用。主画面より目立たせない。 */
+            body.mobileNormalMine_STEP486 #minimap {
+                width: 64px !important;
+                max-width: 64px !important;
+                max-height: 64px !important;
+
+                margin: 2px auto 3px !important;
+                padding: 1px !important;
+
+                opacity: .82;
+            }
+
+            body.mobileNormalMine_STEP486 #minimap .mini-tile {
+                min-width: 0 !important;
+                min-height: 0 !important;
+            }
+
+            /* ログは履歴ではなく「直近数件」を見る場所にする */
+            #log {
+                max-height: 48px !important;
+                margin-top: 3px !important;
+                padding: 4px 6px !important;
+
+                font-size: 9px !important;
+                line-height: 1.22 !important;
+            }
+
+            #log > div {
+                padding: 1px 0 !important;
+            }
+
+            /* 操作部を少し詰めてSE3の1画面へ寄せる */
+            .mobileControlHost_STEP485 {
+                margin-top: 3px !important;
+                gap: 5px !important;
+            }
+
+            #mobileDpad_STEP485 {
+                grid-template-columns:
+                    repeat(3, 42px)
+                    !important;
+                grid-template-rows:
+                    repeat(3, 42px)
+                    !important;
+                gap: 3px !important;
+            }
+
+            #mobileDpad_STEP485 [data-move],
+            #mobileConfirmButton_STEP485 {
+                width: 42px !important;
+                min-width: 42px !important;
+                max-width: 42px !important;
+
+                height: 42px !important;
+                min-height: 42px !important;
+                max-height: 42px !important;
+            }
+
+            #movementExtraActions_STEP477 {
+                width:
+                    min(
+                        158px,
+                        calc(100% - 134px)
+                    ) !important;
+
+                padding-left: 5px !important;
+                gap: 4px !important;
+            }
+
+            #movementExtraActions_STEP477
+            #miningButton_STEP464,
+            #movementExtraActions_STEP477
+            #inventoryButton {
+                height: 40px !important;
+                min-height: 40px !important;
+
+                font-size: 10px !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+function ensureMobileMineHud_STEP486() {
+    if (
+        !isMobilePrimary_STEP485() ||
+        game.baseOpen
+    ) {
+        var old =
+            document.getElementById(
+                "mobileMineHud_STEP486"
+            );
+
+        if (old) {
+            old.style.display =
+                "none";
+        }
+
+        return null;
+    }
+
+    var hud =
+        document.getElementById(
+            "mobileMineHud_STEP486"
+        );
+
+    if (!hud) {
+        hud =
+            document.createElement(
+                "div"
+            );
+
+        hud.id =
+            "mobileMineHud_STEP486";
+
+        var top =
+            document.createElement(
+                "div"
+            );
+
+        top.id =
+            "mobileMineHudTop_STEP486";
+
+        var location =
+            document.createElement(
+                "div"
+            );
+
+        location.id =
+            "mobileMineHudLocation_STEP486";
+
+        var hpText =
+            document.createElement(
+                "div"
+            );
+
+        hpText.id =
+            "mobileMineHudHpText_STEP486";
+
+        top.appendChild(
+            location
+        );
+
+        top.appendChild(
+            hpText
+        );
+
+        var bar =
+            document.createElement(
+                "div"
+            );
+
+        bar.id =
+            "mobileMineHudHpBar_STEP486";
+
+        var fill =
+            document.createElement(
+                "span"
+            );
+
+        fill.id =
+            "mobileMineHudHpFill_STEP486";
+
+        bar.appendChild(
+            fill
+        );
+
+        var action =
+            document.createElement(
+                "div"
+            );
+
+        action.id =
+            "mobileMineHudAction_STEP486";
+
+        var last =
+            document.createElement(
+                "div"
+            );
+
+        last.id =
+            "mobileMineHudLast_STEP486";
+
+        hud.appendChild(
+            top
+        );
+
+        hud.appendChild(
+            bar
+        );
+
+        hud.appendChild(
+            action
+        );
+
+        hud.appendChild(
+            last
+        );
+    }
+
+    if (
+        mapElement &&
+        mapElement.parentNode &&
+        hud.parentNode !==
+            mapElement.parentNode
+    ) {
+        mapElement.parentNode.insertBefore(
+            hud,
+            mapElement
+        );
+    } else if (
+        mapElement &&
+        mapElement.parentNode &&
+        hud.nextSibling !==
+            mapElement
+    ) {
+        mapElement.parentNode.insertBefore(
+            hud,
+            mapElement
+        );
+    }
+
+    hud.style.display =
+        "block";
+
+    return hud;
+}
+
+
+// ---------------------------------------------------------------------------
+// 現在の探索場所名
+// ---------------------------------------------------------------------------
+function getMobileMineLocation_STEP486() {
+    var layer =
+        Number(
+            game.world &&
+            game.world.currentLayer ||
+            1
+        );
+
+    if (layer === 1) {
+        return (
+            "通常鉱山 Lv" +
+            Number(
+                game.currentMineLevel || 1
+            )
+        );
+    }
+
+    if (layer === 2) {
+        return (
+            "旧坑道 " +
+            Number(
+                game.layer2 &&
+                game.layer2.currentFloor ||
+                1
+            ) +
+            "F"
+        );
+    }
+
+    if (layer === 3) {
+        return (
+            "無風回廊 " +
+            Number(
+                game.layer3 &&
+                game.layer3.currentFloor ||
+                1
+            ) +
+            "F"
+        );
+    }
+
+    if (layer === 4) {
+        return (
+            "残光遺跡 " +
+            Number(
+                game.layer4 &&
+                game.layer4.currentFloor ||
+                1
+            ) +
+            "F"
+        );
+    }
+
+    return (
+        "虚夜空間 " +
+        Number(
+            game.layer5 &&
+                game.layer5.currentFloor ||
+            1001
+        ) +
+        "F"
+    );
+}
+
+
+// ---------------------------------------------------------------------------
+// 「今、決定を押すと何が起きるか」を表示。
+// まず通常鉱山を詳細対応し、上位層でも鉱石は明示。
+// ---------------------------------------------------------------------------
+function getMobileMineActionText_STEP486() {
+    if (
+        game.baseOpen
+    ) {
+        return "";
+    }
+
+    if (
+        game.dead
+    ) {
+        return "行動不能：拠点へ戻ります";
+    }
+
+    if (
+        game.deathWarningOpen ||
+        game.returnConfirmOpen ||
+        game.featherConfirmOpen ||
+        game.stairConfirmOpen
+    ) {
+        return "確認中：中央の「決定」で進む";
+    }
+
+    if (
+        game.inventoryOpen
+    ) {
+        return "インベントリを開いています";
+    }
+
+    var ore =
+        getOreAt(
+            game.player.x,
+            game.player.y
+        );
+
+    if (
+        ore &&
+        ore.discovered
+    ) {
+        return (
+            "足元：" +
+            (
+                ore.name ||
+                "鉱石"
+            ) +
+            "　耐久 " +
+            Number(
+                ore.hp || 0
+            ) +
+            "/" +
+            Number(
+                ore.maxHp || 0
+            ) +
+            "　→ 決定で採掘"
+        );
+    }
+
+    var layer =
+        Number(
+            game.world &&
+            game.world.currentLayer ||
+            1
+        );
+
+    if (layer === 1) {
+        if (
+            game.returnPoint &&
+            game.returnPoint.found &&
+            game.player.x ===
+                game.returnPoint.x &&
+            game.player.y ===
+                game.returnPoint.y
+        ) {
+            return (
+                "足元：帰還地点　→ 決定で拠点へ戻る"
+            );
+        }
+
+        if (
+            game.stairs &&
+            game.stairs.found &&
+            game.player.x ===
+                game.stairs.x &&
+            game.player.y ===
+                game.stairs.y
+        ) {
+            return (
+                "足元：階段　→ 決定で次へ進む"
+            );
+        }
+
+        if (
+            game.treasureChest &&
+            game.treasureChest.exists &&
+            game.treasureChest.found &&
+            game.player.x ===
+                game.treasureChest.x &&
+            game.player.y ===
+                game.treasureChest.y
+        ) {
+            return (
+                "足元：宝箱　→ 決定で開ける"
+            );
+        }
+
+        if (
+            game.randomEvent &&
+            game.randomEvent.exists &&
+            game.randomEvent.found &&
+            game.player.x ===
+                game.randomEvent.x &&
+            game.player.y ===
+                game.randomEvent.y
+        ) {
+            if (
+                game.randomEvent.type ===
+                "healing"
+            ) {
+                return (
+                    "足元：癒やしの泉　→ 決定で回復"
+                );
+            }
+
+            if (
+                game.randomEvent.type ===
+                "supply"
+            ) {
+                return (
+                    "足元：補給箱　→ 決定で開ける"
+                );
+            }
+
+            if (
+                game.randomEvent.type ===
+                "oreVein"
+            ) {
+                return (
+                    "足元：鉱脈　→ 決定で採取"
+                );
+            }
+        }
+    }
+
+    return (
+        "移動中　座標 " +
+        Number(game.player.x) +
+        "," +
+        Number(game.player.y) +
+        "　中央の「決定」で足元を調べる"
+    );
+}
+
+
+function updateMobileMineHud_STEP486() {
+    var hud =
+        ensureMobileMineHud_STEP486();
+
+    if (!hud) {
+        return;
+    }
+
+    var location =
+        document.getElementById(
+            "mobileMineHudLocation_STEP486"
+        );
+
+    var hpText =
+        document.getElementById(
+            "mobileMineHudHpText_STEP486"
+        );
+
+    var fill =
+        document.getElementById(
+            "mobileMineHudHpFill_STEP486"
+        );
+
+    var action =
+        document.getElementById(
+            "mobileMineHudAction_STEP486"
+        );
+
+    var last =
+        document.getElementById(
+            "mobileMineHudLast_STEP486"
+        );
+
+    if (location) {
+        location.textContent =
+            getMobileMineLocation_STEP486();
+    }
+
+    var hp =
+        Number(
+            game.player.hp || 0
+        );
+
+    var maxHp =
+        Math.max(
+            1,
+            Number(
+                game.player.maxHp || 1
+            )
+        );
+
+    if (hpText) {
+        hpText.textContent =
+            "HP " +
+            formatHp(hp) +
+            " / " +
+            formatHp(maxHp);
+    }
+
+    if (fill) {
+        var ratio =
+            Math.max(
+                0,
+                Math.min(
+                    1,
+                    hp / maxHp
+                )
+            );
+
+        fill.style.transform =
+            "scaleX(" +
+            ratio +
+            ")";
+    }
+
+    if (action) {
+        action.textContent =
+            getMobileMineActionText_STEP486();
+    }
+
+    if (last) {
+        last.textContent =
+            window.__mobileMineLastLog_STEP486
+                ? (
+                    "直前：" +
+                    window.__mobileMineLastLog_STEP486
+                )
+                : "直前：探索開始";
+    }
+
+    document.body.classList.toggle(
+        "mobileNormalMine_STEP486",
+        isMobilePrimary_STEP485() &&
+        !game.baseOpen &&
+        Number(
+            game.world &&
+            game.world.currentLayer ||
+            1
+        ) === 1
+    );
+}
+
+
+// ---------------------------------------------------------------------------
+// 通常鉱山をスマホだけ11×11カメラへ。
+// 既存renderMapで作ったタイルを切り出すので、
+// 色・イベント・クリック処理などの既存仕様はそのまま保持。
+// ---------------------------------------------------------------------------
+function cropNormalMineMapForMobile_STEP486() {
+    if (
+        !isMobilePrimary_STEP485() ||
+        game.baseOpen ||
+        Number(
+            game.world &&
+            game.world.currentLayer ||
+            1
+        ) !== 1 ||
+        !mapElement
+    ) {
+        return;
+    }
+
+    var allTiles =
+        Array.from(
+            mapElement.children
+        );
+
+    if (
+        allTiles.length !==
+        MAP_SIZE * MAP_SIZE
+    ) {
+        return;
+    }
+
+    var radius = 5;
+
+    var minX =
+        Math.max(
+            0,
+            game.player.x - radius
+        );
+
+    var maxX =
+        Math.min(
+            MAP_SIZE - 1,
+            game.player.x + radius
+        );
+
+    var minY =
+        Math.max(
+            0,
+            game.player.y - radius
+        );
+
+    var maxY =
+        Math.min(
+            MAP_SIZE - 1,
+            game.player.y + radius
+        );
+
+    // 端に寄った時も可能な限り11×11を維持。
+    var targetSize =
+        Math.min(
+            MAP_SIZE,
+            radius * 2 + 1
+        );
+
+    if (
+        maxX - minX + 1 <
+        targetSize
+    ) {
+        if (minX === 0) {
+            maxX =
+                Math.min(
+                    MAP_SIZE - 1,
+                    targetSize - 1
+                );
+        } else if (
+            maxX ===
+            MAP_SIZE - 1
+        ) {
+            minX =
+                Math.max(
+                    0,
+                    MAP_SIZE -
+                    targetSize
+                );
+        }
+    }
+
+    if (
+        maxY - minY + 1 <
+        targetSize
+    ) {
+        if (minY === 0) {
+            maxY =
+                Math.min(
+                    MAP_SIZE - 1,
+                    targetSize - 1
+                );
+        } else if (
+            maxY ===
+            MAP_SIZE - 1
+        ) {
+            minY =
+                Math.max(
+                    0,
+                    MAP_SIZE -
+                    targetSize
+                );
+        }
+    }
+
+    var fragment =
+        document.createDocumentFragment();
+
+    for (
+        var y = minY;
+        y <= maxY;
+        y++
+    ) {
+        for (
+            var x = minX;
+            x <= maxX;
+            x++
+        ) {
+            var tile =
+                allTiles[
+                    y * MAP_SIZE + x
+                ];
+
+            if (tile) {
+                fragment.appendChild(
+                    tile
+                );
+            }
+        }
+    }
+
+    mapElement.innerHTML =
+        "";
+
+    mapElement.appendChild(
+        fragment
+    );
+
+    var cols =
+        maxX - minX + 1;
+
+    var rows =
+        maxY - minY + 1;
+
+    mapElement.style.gridTemplateColumns =
+        "repeat(" +
+        cols +
+        ", 1fr)";
+
+    mapElement.style.gridTemplateRows =
+        "repeat(" +
+        rows +
+        ", 1fr)";
+
+    mapElement.dataset
+        .mobileCameraStep486 =
+        minX +
+        "," +
+        minY +
+        "," +
+        maxX +
+        "," +
+        maxY;
+}
+
+
+// render本体は触らず、最終renderMapの表示結果だけスマホ時に切り出す。
+const _step486_renderMap =
+    renderMap;
+
+renderMap =
+    function() {
+        var result =
+            _step486_renderMap();
+
+        cropNormalMineMapForMobile_STEP486();
+
+        updateMobileMineHud_STEP486();
+
+        return result;
+    };
+
+
+// ---------------------------------------------------------------------------
+// HP更新・ログ追加でもHUDを即時更新。
+// ---------------------------------------------------------------------------
+const _step486_updateStatusUI =
+    updateStatusUI;
+
+updateStatusUI =
+    function() {
+        var result =
+            _step486_updateStatusUI();
+
+        updateMobileMineHud_STEP486();
+
+        return result;
+    };
+
+
+const _step486_addLog =
+    addLog;
+
+addLog =
+    function(text) {
+        var result =
+            _step486_addLog(
+                text
+            );
+
+        window.__mobileMineLastLog_STEP486 =
+            String(
+                text || ""
+            );
+
+        updateMobileMineHud_STEP486();
+
+        return result;
+    };
+
+
+// スマホUI再計算にも接続。
+const _step486_refreshMobilePrimaryUI =
+    refreshMobilePrimaryUI_STEP485;
+
+refreshMobilePrimaryUI_STEP485 =
+    function() {
+        var result =
+            _step486_refreshMobilePrimaryUI();
+
+        updateMobileMineHud_STEP486();
+
+        return result;
+    };
+
+
+ensureMobileMineHudStyle_STEP486();
+
+setTimeout(
+    function() {
+        updateMobileMineHud_STEP486();
+
+        if (
+            isMobilePrimary_STEP485() &&
+            !game.baseOpen
+        ) {
+            render();
+        }
+    },
+    0
+);
+
