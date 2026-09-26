@@ -54139,3 +54139,171 @@ setTimeout(
 // 起動高速化のため、game.js内のbase64 PNG 9枚を images/ へ分離。
 // 画像内容・表示ロジックは変更せず、参照先だけ相対パスへ変更。
 // ============================================================================
+
+
+// ============================================================================
+// STEP 4-93：スマホ拠点 ギルダー表示バランス調整（安全分離版）
+// ----------------------------------------------------------------------------
+// ・起動 / 保存 / 鉱山遷移 / 会話ロジックには触れない
+// ・既存DOMを変更せず、スマホ時の見た目だけCSS上書き
+// ・左上「ギルダー」札はSTEP 4-92のまま非表示
+// ============================================================================
+(function applySafeGuilderBalance_STEP493() {
+    if (document.getElementById("safeGuilderBalanceStyle_STEP493")) {
+        return;
+    }
+
+    var style = document.createElement("style");
+    style.id = "safeGuilderBalanceStyle_STEP493";
+    style.textContent = `
+        @media (max-width: 640px), (pointer: coarse) {
+            #baseLeftColumn_STEP480 {
+                grid-template-rows:
+                    165px
+                    minmax(104px, auto)
+                    !important;
+            }
+
+            #baseGuilderPanel_STEP480 {
+                height: 165px !important;
+                min-height: 165px !important;
+                flex-basis: 165px !important;
+            }
+
+            #baseGuilderPanel_STEP480 #baseMinerImage_STEP439 {
+                width: min(62%, 170px) !important;
+                max-height: 160px !important;
+                object-fit: contain !important;
+                object-position: right bottom !important;
+            }
+
+            #baseGuilderDialogue_STEP481 {
+                min-height: 104px !important;
+                padding: 9px 11px !important;
+            }
+
+            #baseGuilderDialogueLabel_STEP481 {
+                margin-bottom: 5px !important;
+                font-size: 10.5px !important;
+            }
+
+            #baseGuilderDialogueText_STEP481 {
+                min-height: 54px !important;
+                font-size: 12px !important;
+                line-height: 1.55 !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+})();
+
+
+// ============================================================================
+// STEP 4-94：更新反映の確実化 + スマホ探索UI 移動後崩れ対策
+// ----------------------------------------------------------------------------
+// 安全方針:
+// ・既存 renderMap / 保存 / 鉱山処理は書き換えない
+// ・最終 renderMap の後だけ、STEP4-88の再配置保証を追加
+// ・旧STEP1画面の不要な直下要素は「スマホ探索中だけ」非表示
+// ============================================================================
+(function installMobileExploreStability_STEP494() {
+    if (window.__mobileExploreStabilityInstalled_STEP494) {
+        return;
+    }
+    window.__mobileExploreStabilityInstalled_STEP494 = true;
+
+    // 旧プロトタイプUIが再描画タイミングで露出しても、
+    // STEP4-87専用探索UIだけを前面に残す。
+    var style = document.createElement("style");
+    style.id = "mobileExploreStabilityStyle_STEP494";
+    style.textContent = `
+        @media (max-width: 600px) {
+            body.mobileExplore487 .top-bar {
+                display: none !important;
+            }
+
+            body.mobileExplore487 .game-layout {
+                display: block !important;
+            }
+
+            body.mobileExplore487 .main-panel {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+            }
+
+            body.mobileExplore487 .main-panel > .panel-title,
+            body.mobileExplore487 .main-panel > .controls,
+            body.mobileExplore487 .main-panel > .keyboard-help,
+            body.mobileExplore487 .main-panel > #leaveButton {
+                display: none !important;
+            }
+
+            /* log/minimapは専用UIへ移動済みなので旧右カラムは隠す */
+            body.mobileExplore487 .game-layout > .side-panel {
+                display: none !important;
+            }
+
+            /* 旧メッセージ欄の余白も探索中は作らせない */
+            body.mobileExplore487 main.game > #message {
+                display: none !important;
+            }
+
+            #mobileExploreLayout_STEP487 {
+                position: relative;
+                z-index: 20;
+            }
+
+            #mobileControllerDock_STEP487 {
+                z-index: 14500 !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // renderMapの本体には触れず、描画完了後だけ再配置を保証。
+    var previousRenderMap_STEP494 = renderMap;
+
+    renderMap = function() {
+        var result = previousRenderMap_STEP494.apply(this, arguments);
+
+        if (
+            typeof isMobilePrimary_STEP485 === "function" &&
+            isMobilePrimary_STEP485() &&
+            !game.baseOpen &&
+            typeof reinforceMobileExploreLayout_STEP488 === "function"
+        ) {
+            // 同期でまず戻す。
+            reinforceMobileExploreLayout_STEP488();
+
+            // Safariのレイアウト確定後にも1回。
+            if (typeof requestAnimationFrame === "function") {
+                requestAnimationFrame(function() {
+                    if (
+                        !game.baseOpen &&
+                        isMobilePrimary_STEP485()
+                    ) {
+                        reinforceMobileExploreLayout_STEP488();
+                    }
+                });
+            }
+
+            // 後続UI更新がDOMを触った場合の最終保証。
+            setTimeout(function() {
+                if (
+                    !game.baseOpen &&
+                    isMobilePrimary_STEP485()
+                ) {
+                    reinforceMobileExploreLayout_STEP488();
+                }
+            }, 40);
+        }
+
+        return result;
+    };
+})();
