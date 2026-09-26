@@ -52358,3 +52358,1425 @@ setTimeout(
     0
 );
 
+
+
+// ============================================================================
+// STEP 4-87：スマホ探索画面を専用レイアウトへ再構成
+// ----------------------------------------------------------------------------
+// iPhone SE3 (375×667) 縦持ち基準
+//
+//   [ HP / 場所 ]
+//   [ メインMAP + 半透明ミニMAP ][ ログ ]
+//   [ 現在の状況 / 決定で行うこと ]
+//   ---------------------------------
+//   画面下固定：十字キー + 決定 / 採掘 / かばん
+//
+// ・ミニマップはメインマップ左上へ薄く重ねる
+// ・触れている間 / タップ時に見やすくする
+// ・ログはメインマップ右側へ縦長表示
+// ・操作パッドはsafe-area対応で画面下へ固定
+// ・PC版のDOM配置には干渉しない
+// ============================================================================
+
+
+// ---------------------------------------------------------------------------
+// CSS
+// ---------------------------------------------------------------------------
+function ensureMobileExploreLayoutStyle_STEP487() {
+    if (
+        document.getElementById(
+            "mobileExploreLayoutStyle_STEP487"
+        )
+    ) {
+        return;
+    }
+
+    var style =
+        document.createElement(
+            "style"
+        );
+
+    style.id =
+        "mobileExploreLayoutStyle_STEP487";
+
+    style.textContent = `
+        #mobileExploreLayout_STEP487,
+        #mobileControllerDock_STEP487 {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            body.mobileExplore487 {
+                padding-bottom:
+                    calc(
+                        142px +
+                        env(safe-area-inset-bottom)
+                    )
+                    !important;
+            }
+
+            /* STEP4-86のHUDは4-87の専用HUDへ置換 */
+            body.mobileExplore487
+            #mobileMineHud_STEP486 {
+                display: none !important;
+            }
+
+            #mobileExploreLayout_STEP487 {
+                display: block;
+                width:
+                    min(
+                        calc(100vw - 8px),
+                        367px
+                    );
+                margin:
+                    2px auto 5px;
+                box-sizing: border-box;
+            }
+
+
+            /* ============================================================
+               上段 HP
+               ============================================================ */
+
+            #mobileTopHud_STEP487 {
+                width: 100%;
+                padding: 6px 8px;
+                box-sizing: border-box;
+
+                border:
+                    1px solid
+                    rgba(214,188,106,.62);
+                border-radius: 8px;
+
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgba(24,27,28,.98),
+                        rgba(10,12,14,.98)
+                    );
+
+                box-shadow:
+                    0 3px 12px
+                    rgba(0,0,0,.42);
+            }
+
+            #mobileTopHudLine_STEP487 {
+                display: grid;
+                grid-template-columns:
+                    minmax(0,1fr)
+                    auto;
+                gap: 7px;
+                align-items: center;
+            }
+
+            #mobileTopLocation_STEP487 {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+
+                color: #e3cc82;
+                font-size: 11px;
+                font-weight: 900;
+            }
+
+            #mobileTopHpText_STEP487 {
+                color: #f2f2eb;
+                font-size: 12px;
+                font-weight: 900;
+                font-variant-numeric:
+                    tabular-nums;
+                white-space: nowrap;
+            }
+
+            #mobileTopHpTrack_STEP487 {
+                height: 7px;
+                margin-top: 5px;
+                overflow: hidden;
+
+                border:
+                    1px solid
+                    rgba(255,255,255,.13);
+                border-radius: 999px;
+
+                background: #111518;
+            }
+
+            #mobileTopHpFill_STEP487 {
+                display: block;
+                width: 100%;
+                height: 100%;
+
+                transform-origin:
+                    left center;
+
+                background:
+                    linear-gradient(
+                        90deg,
+                        #b94b46 0%,
+                        #d6b048 52%,
+                        #67b878 100%
+                    );
+            }
+
+
+            /* ============================================================
+               SIGNAL
+               ============================================================ */
+
+            #mobileExploreSignalSlot_STEP487 {
+                margin-top: 4px;
+            }
+
+            #mobileExploreSignalSlot_STEP487
+            #importantSignalBar_STEP456 {
+                width: 100% !important;
+                min-height: 25px !important;
+                margin: 0 !important;
+                padding: 3px 6px !important;
+                box-sizing: border-box !important;
+                border-radius: 5px !important;
+            }
+
+            #mobileExploreSignalSlot_STEP487
+            #importantSignalLabel_STEP456 {
+                font-size: 8px !important;
+            }
+
+            #mobileExploreSignalSlot_STEP487
+            #importantSignalLatest_STEP456 {
+                font-size: 9px !important;
+                line-height: 1.2 !important;
+            }
+
+            #mobileExploreSignalSlot_STEP487
+            #importantSignalHint_STEP456 {
+                display: none !important;
+            }
+
+
+            /* ============================================================
+               中央：MAP + LOG
+               ============================================================ */
+
+            #mobileCenterRow_STEP487 {
+                display: grid;
+                grid-template-columns:
+                    minmax(0, 1fr)
+                    88px;
+                gap: 5px;
+
+                width: 100%;
+                margin-top: 5px;
+
+                align-items: stretch;
+            }
+
+            #mobileMapStage_STEP487 {
+                position: relative;
+
+                min-width: 0;
+                height: 250px;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                overflow: hidden;
+
+                border:
+                    1px solid #4c555c;
+                border-radius: 9px;
+
+                background:
+                    rgba(8,10,12,.96);
+
+                box-shadow:
+                    inset 0 0 12px
+                    rgba(0,0,0,.48);
+            }
+
+            #mobileMapStage_STEP487 #map {
+                margin: 0 !important;
+                border: 0 !important;
+                box-shadow: none !important;
+            }
+
+            /* 通常鉱山11×11はこの枠へ収める */
+            body.mobileNormalMine_STEP486
+            #mobileMapStage_STEP487
+            #map {
+                width: 242px !important;
+                min-width: 242px !important;
+                max-width: 242px !important;
+
+                height: 242px !important;
+                min-height: 242px !important;
+                max-height: 242px !important;
+            }
+
+
+            /* ============================================================
+               ミニマップ：メインMAP上へ薄くオーバーレイ
+               ============================================================ */
+
+            #mobileMapStage_STEP487 #minimap {
+                position: absolute !important;
+                z-index: 25 !important;
+
+                left: 5px !important;
+                top: 5px !important;
+
+                width: 62px !important;
+                height: 62px !important;
+                min-width: 62px !important;
+                min-height: 62px !important;
+                max-width: 62px !important;
+                max-height: 62px !important;
+
+                margin: 0 !important;
+                padding: 2px !important;
+
+                box-sizing: border-box !important;
+
+                border:
+                    1px solid
+                    rgba(210,225,230,.36)
+                    !important;
+                border-radius: 5px !important;
+
+                background:
+                    rgba(0,0,0,.22)
+                    !important;
+
+                opacity: .36 !important;
+
+                box-shadow:
+                    0 2px 8px
+                    rgba(0,0,0,.22)
+                    !important;
+
+                transition:
+                    opacity .15s ease,
+                    transform .15s ease,
+                    background .15s ease
+                    !important;
+
+                overflow: hidden !important;
+
+                cursor: pointer !important;
+                touch-action:
+                    manipulation !important;
+            }
+
+            #mobileMapStage_STEP487
+            #minimap:hover,
+            #mobileMapStage_STEP487
+            #minimap:active,
+            #mobileMapStage_STEP487
+            #minimap.mobileMiniMapFocus_STEP487 {
+                opacity: .94 !important;
+
+                background:
+                    rgba(0,0,0,.78)
+                    !important;
+
+                transform:
+                    scale(1.06)
+                    !important;
+            }
+
+            #mobileMapStage_STEP487
+            #minimap .mini-tile {
+                min-width: 0 !important;
+                min-height: 0 !important;
+            }
+
+
+            /* ============================================================
+               右ログ
+               ============================================================ */
+
+            #mobileLogColumn_STEP487 {
+                min-width: 0;
+                height: 250px;
+                overflow: hidden;
+
+                display: flex;
+                flex-direction: column;
+
+                border:
+                    1px solid #4b535a;
+                border-radius: 7px;
+
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgba(20,23,25,.98),
+                        rgba(10,12,14,.98)
+                    );
+            }
+
+            #mobileLogTitle_STEP487 {
+                flex: 0 0 auto;
+
+                padding: 4px 3px;
+
+                border-bottom:
+                    1px solid
+                    rgba(255,255,255,.09);
+
+                color: #d6c27c;
+                font-size: 9px;
+                font-weight: 900;
+                text-align: center;
+                letter-spacing: .08em;
+            }
+
+            #mobileLogColumn_STEP487 #log {
+                flex: 1 1 auto;
+
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
+
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+
+                margin: 0 !important;
+                padding: 5px 5px !important;
+
+                box-sizing: border-box !important;
+
+                border: 0 !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+
+                color: #bcc5ca !important;
+                font-size: 8.5px !important;
+                line-height: 1.35 !important;
+
+                touch-action:
+                    pan-y !important;
+                -webkit-overflow-scrolling:
+                    touch;
+            }
+
+            #mobileLogColumn_STEP487
+            #log > div {
+                padding:
+                    2px 0 !important;
+
+                border-bottom:
+                    1px solid
+                    rgba(255,255,255,.04)
+                    !important;
+
+                overflow-wrap:
+                    anywhere;
+            }
+
+            #mobileLogColumn_STEP487
+            #log > div:last-child {
+                color: #f0ead7 !important;
+                font-weight: 700;
+            }
+
+
+            /* ============================================================
+               下部：現在状況
+               ============================================================ */
+
+            #mobileSituation_STEP487 {
+                width: 100%;
+                min-height: 58px;
+
+                margin-top: 5px;
+                padding: 7px 9px;
+
+                box-sizing: border-box;
+
+                border:
+                    1px solid #4d565d;
+                border-radius: 8px;
+
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgba(21,24,26,.98),
+                        rgba(10,12,14,.98)
+                    );
+            }
+
+            #mobileSituationAction_STEP487 {
+                color: #e5edf0;
+                font-size: 10.5px;
+                font-weight: 900;
+                line-height: 1.4;
+            }
+
+            #mobileSituationLast_STEP487 {
+                margin-top: 4px;
+
+                color: #8f999f;
+                font-size: 9px;
+                line-height: 1.3;
+
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
+
+            /* ============================================================
+               最下部固定コントローラー
+               ============================================================ */
+
+            #mobileControllerDock_STEP487 {
+                position: fixed;
+                z-index: 14500;
+
+                left: 50%;
+                bottom: 0;
+
+                transform:
+                    translateX(-50%);
+
+                display: grid;
+
+                grid-template-columns:
+                    132px
+                    minmax(0, 1fr);
+
+                gap: 7px;
+
+                width:
+                    min(
+                        100vw,
+                        375px
+                    );
+
+                min-height: 132px;
+
+                padding:
+                    6px
+                    7px
+                    calc(
+                        6px +
+                        env(
+                            safe-area-inset-bottom
+                        )
+                    );
+
+                box-sizing: border-box;
+
+                border-top:
+                    1px solid
+                    rgba(210,190,120,.36);
+
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgba(17,20,22,.95),
+                        rgba(7,9,11,.99)
+                    );
+
+                box-shadow:
+                    0 -8px 22px
+                    rgba(0,0,0,.58);
+
+                backdrop-filter:
+                    blur(7px);
+            }
+
+            #mobileControllerDock_STEP487
+            #mobileDpad_STEP485 {
+                align-self: center;
+                justify-self: center;
+
+                grid-template-columns:
+                    repeat(3, 40px)
+                    !important;
+
+                grid-template-rows:
+                    repeat(3, 40px)
+                    !important;
+
+                gap: 3px !important;
+            }
+
+            #mobileControllerDock_STEP487
+            #mobileDpad_STEP485 [data-move],
+            #mobileControllerDock_STEP487
+            #mobileConfirmButton_STEP485 {
+                width: 40px !important;
+                min-width: 40px !important;
+                max-width: 40px !important;
+
+                height: 40px !important;
+                min-height: 40px !important;
+                max-height: 40px !important;
+
+                border-radius:
+                    9px !important;
+            }
+
+            #mobileControllerDock_STEP487
+            #mobileConfirmButton_STEP485 {
+                font-size:
+                    10px !important;
+            }
+
+            #mobileControllerActions_STEP487 {
+                min-width: 0;
+
+                display: grid;
+                grid-template-rows:
+                    1fr 1fr;
+                gap: 6px;
+
+                align-self: center;
+            }
+
+            #mobileControllerActions_STEP487
+            #movementExtraActions_STEP477 {
+                display: contents !important;
+            }
+
+            #mobileControllerActions_STEP487
+            #miningButton_STEP464,
+            #mobileControllerActions_STEP487
+            #inventoryButton {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
+
+                height: 48px !important;
+                min-height: 48px !important;
+
+                margin: 0 !important;
+                padding: 3px 7px !important;
+
+                border-radius: 8px !important;
+
+                font-size: 11px !important;
+                font-weight: 900 !important;
+            }
+
+            #mobileControllerActions_STEP487
+            #miningButton_STEP464 {
+                grid-row: 1;
+            }
+
+            #mobileControllerActions_STEP487
+            #inventoryButton {
+                grid-row: 2;
+            }
+
+
+            /* 旧ActionBar自体は空になったらスペースを取らせない */
+            #explorationActionBar:empty {
+                display: none !important;
+            }
+        }
+
+
+        /* SE3よりさらに低い表示領域用 */
+        @media
+            (max-width: 600px)
+            and (max-height: 620px) {
+
+            #mobileMapStage_STEP487,
+            #mobileLogColumn_STEP487 {
+                height: 220px;
+            }
+
+            body.mobileNormalMine_STEP486
+            #mobileMapStage_STEP487
+            #map {
+                width: 214px !important;
+                min-width: 214px !important;
+                max-width: 214px !important;
+
+                height: 214px !important;
+                min-height: 214px !important;
+                max-height: 214px !important;
+            }
+
+            #mobileSituation_STEP487 {
+                min-height: 50px;
+                padding: 5px 7px;
+            }
+
+            #mobileControllerDock_STEP487 {
+                min-height: 120px;
+            }
+
+            body.mobileExplore487 {
+                padding-bottom:
+                    calc(
+                        130px +
+                        env(safe-area-inset-bottom)
+                    )
+                    !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// ---------------------------------------------------------------------------
+// 専用DOM
+// ---------------------------------------------------------------------------
+function ensureMobileExploreLayout_STEP487() {
+    ensureMobileExploreLayoutStyle_STEP487();
+
+    if (
+        !isMobilePrimary_STEP485() ||
+        game.baseOpen ||
+        !mapElement ||
+        !logElement
+    ) {
+        document.body.classList.remove(
+            "mobileExplore487"
+        );
+
+        var old =
+            document.getElementById(
+                "mobileExploreLayout_STEP487"
+            );
+
+        if (old) {
+            old.style.display =
+                "none";
+        }
+
+        var dockOld =
+            document.getElementById(
+                "mobileControllerDock_STEP487"
+            );
+
+        if (dockOld) {
+            dockOld.style.display =
+                "none";
+        }
+
+        return null;
+    }
+
+    document.body.classList.add(
+        "mobileExplore487"
+    );
+
+    var layout =
+        document.getElementById(
+            "mobileExploreLayout_STEP487"
+        );
+
+    if (!layout) {
+        layout =
+            document.createElement(
+                "div"
+            );
+
+        layout.id =
+            "mobileExploreLayout_STEP487";
+
+
+        // HP
+        var hud =
+            document.createElement(
+                "div"
+            );
+
+        hud.id =
+            "mobileTopHud_STEP487";
+
+        var hudLine =
+            document.createElement(
+                "div"
+            );
+
+        hudLine.id =
+            "mobileTopHudLine_STEP487";
+
+        var location =
+            document.createElement(
+                "div"
+            );
+
+        location.id =
+            "mobileTopLocation_STEP487";
+
+        var hpText =
+            document.createElement(
+                "div"
+            );
+
+        hpText.id =
+            "mobileTopHpText_STEP487";
+
+        hudLine.appendChild(
+            location
+        );
+
+        hudLine.appendChild(
+            hpText
+        );
+
+        var hpTrack =
+            document.createElement(
+                "div"
+            );
+
+        hpTrack.id =
+            "mobileTopHpTrack_STEP487";
+
+        var hpFill =
+            document.createElement(
+                "span"
+            );
+
+        hpFill.id =
+            "mobileTopHpFill_STEP487";
+
+        hpTrack.appendChild(
+            hpFill
+        );
+
+        hud.appendChild(
+            hudLine
+        );
+
+        hud.appendChild(
+            hpTrack
+        );
+
+
+        // SIGNAL置き場
+        var signal =
+            document.createElement(
+                "div"
+            );
+
+        signal.id =
+            "mobileExploreSignalSlot_STEP487";
+
+
+        // 中央
+        var center =
+            document.createElement(
+                "div"
+            );
+
+        center.id =
+            "mobileCenterRow_STEP487";
+
+        var mapStage =
+            document.createElement(
+                "div"
+            );
+
+        mapStage.id =
+            "mobileMapStage_STEP487";
+
+        var logColumn =
+            document.createElement(
+                "div"
+            );
+
+        logColumn.id =
+            "mobileLogColumn_STEP487";
+
+        var logTitle =
+            document.createElement(
+                "div"
+            );
+
+        logTitle.id =
+            "mobileLogTitle_STEP487";
+
+        logTitle.textContent =
+            "LOG";
+
+        logColumn.appendChild(
+            logTitle
+        );
+
+        center.appendChild(
+            mapStage
+        );
+
+        center.appendChild(
+            logColumn
+        );
+
+
+        // 状況
+        var situation =
+            document.createElement(
+                "div"
+            );
+
+        situation.id =
+            "mobileSituation_STEP487";
+
+        var action =
+            document.createElement(
+                "div"
+            );
+
+        action.id =
+            "mobileSituationAction_STEP487";
+
+        var last =
+            document.createElement(
+                "div"
+            );
+
+        last.id =
+            "mobileSituationLast_STEP487";
+
+        situation.appendChild(
+            action
+        );
+
+        situation.appendChild(
+            last
+        );
+
+
+        layout.appendChild(
+            hud
+        );
+
+        layout.appendChild(
+            signal
+        );
+
+        layout.appendChild(
+            center
+        );
+
+        layout.appendChild(
+            situation
+        );
+    }
+
+
+    // 現在mapの親へ専用レイアウトを入れる。
+    var currentParent =
+        mapElement.parentNode;
+
+    if (
+        layout.parentNode !==
+        currentParent
+    ) {
+        currentParent.insertBefore(
+            layout,
+            mapElement
+        );
+    }
+
+
+    var mapStageNow =
+        document.getElementById(
+            "mobileMapStage_STEP487"
+        );
+
+    var logColumnNow =
+        document.getElementById(
+            "mobileLogColumn_STEP487"
+        );
+
+    if (
+        mapElement.parentNode !==
+        mapStageNow
+    ) {
+        mapStageNow.appendChild(
+            mapElement
+        );
+    }
+
+    if (
+        logElement.parentNode !==
+        logColumnNow
+    ) {
+        logColumnNow.appendChild(
+            logElement
+        );
+    }
+
+
+    // ミニMAPをMAP上へ。
+    if (
+        minimapElement &&
+        minimapElement.parentNode !==
+            mapStageNow
+    ) {
+        mapStageNow.appendChild(
+            minimapElement
+        );
+    }
+
+
+    // SIGNALをHP直下へ。
+    var signalBar =
+        document.getElementById(
+            "importantSignalBar_STEP456"
+        );
+
+    var signalSlot =
+        document.getElementById(
+            "mobileExploreSignalSlot_STEP487"
+        );
+
+    if (
+        signalBar &&
+        signalSlot &&
+        signalBar.parentNode !==
+            signalSlot
+    ) {
+        signalSlot.appendChild(
+            signalBar
+        );
+    }
+
+
+    // 下固定コントローラー。
+    setupMobileControllerDock_STEP487();
+
+    layout.style.display =
+        "block";
+
+    return layout;
+}
+
+
+// ---------------------------------------------------------------------------
+// 下固定コントローラー
+// ---------------------------------------------------------------------------
+function setupMobileControllerDock_STEP487() {
+    if (
+        !isMobilePrimary_STEP485() ||
+        game.baseOpen
+    ) {
+        return;
+    }
+
+    // まず4-85の十字キーを生成させる。
+    setupMobileDpad_STEP485();
+
+    var dpad =
+        document.getElementById(
+            "mobileDpad_STEP485"
+        );
+
+    if (!dpad) {
+        return;
+    }
+
+    var dock =
+        document.getElementById(
+            "mobileControllerDock_STEP487"
+        );
+
+    if (!dock) {
+        dock =
+            document.createElement(
+                "div"
+            );
+
+        dock.id =
+            "mobileControllerDock_STEP487";
+
+        var actions =
+            document.createElement(
+                "div"
+            );
+
+        actions.id =
+            "mobileControllerActions_STEP487";
+
+        dock.appendChild(
+            dpad
+        );
+
+        dock.appendChild(
+            actions
+        );
+
+        document.body.appendChild(
+            dock
+        );
+    } else {
+        if (
+            dpad.parentNode !==
+            dock
+        ) {
+            dock.insertBefore(
+                dpad,
+                dock.firstChild
+            );
+        }
+    }
+
+    var actionHolder =
+        document.getElementById(
+            "mobileControllerActions_STEP487"
+        );
+
+    var extra =
+        document.getElementById(
+            "movementExtraActions_STEP477"
+        );
+
+    if (
+        extra &&
+        actionHolder &&
+        extra.parentNode !==
+            actionHolder
+    ) {
+        actionHolder.appendChild(
+            extra
+        );
+    }
+
+    dock.style.display =
+        "grid";
+}
+
+
+// STEP4-85がボタンを元位置へ戻そうとしても、最後にDockへ固定。
+const _step487_setupMobileDpad =
+    setupMobileDpad_STEP485;
+
+setupMobileDpad_STEP485 =
+    function() {
+        var result =
+            _step487_setupMobileDpad();
+
+        if (
+            isMobilePrimary_STEP485() &&
+            !game.baseOpen
+        ) {
+            var dpad =
+                document.getElementById(
+                    "mobileDpad_STEP485"
+                );
+
+            var dock =
+                document.getElementById(
+                    "mobileControllerDock_STEP487"
+                );
+
+            if (
+                dpad &&
+                dock &&
+                dpad.parentNode !== dock
+            ) {
+                dock.insertBefore(
+                    dpad,
+                    dock.firstChild
+                );
+            }
+
+            var extra =
+                document.getElementById(
+                    "movementExtraActions_STEP477"
+                );
+
+            var actions =
+                document.getElementById(
+                    "mobileControllerActions_STEP487"
+                );
+
+            if (
+                extra &&
+                actions &&
+                extra.parentNode !== actions
+            ) {
+                actions.appendChild(
+                    extra
+                );
+            }
+        }
+
+        return result;
+    };
+
+
+// ---------------------------------------------------------------------------
+// HUD更新
+// ---------------------------------------------------------------------------
+function updateMobileExploreLayout_STEP487() {
+    var layout =
+        ensureMobileExploreLayout_STEP487();
+
+    if (!layout) {
+        return;
+    }
+
+    var location =
+        document.getElementById(
+            "mobileTopLocation_STEP487"
+        );
+
+    var hpText =
+        document.getElementById(
+            "mobileTopHpText_STEP487"
+        );
+
+    var hpFill =
+        document.getElementById(
+            "mobileTopHpFill_STEP487"
+        );
+
+    var action =
+        document.getElementById(
+            "mobileSituationAction_STEP487"
+        );
+
+    var last =
+        document.getElementById(
+            "mobileSituationLast_STEP487"
+        );
+
+    if (location) {
+        location.textContent =
+            getMobileMineLocation_STEP486();
+    }
+
+    var hp =
+        Number(
+            game.player.hp || 0
+        );
+
+    var maxHp =
+        Math.max(
+            1,
+            Number(
+                game.player.maxHp || 1
+            )
+        );
+
+    if (hpText) {
+        hpText.textContent =
+            "HP " +
+            formatHp(hp) +
+            " / " +
+            formatHp(maxHp);
+    }
+
+    if (hpFill) {
+        hpFill.style.transform =
+            "scaleX(" +
+            Math.max(
+                0,
+                Math.min(
+                    1,
+                    hp / maxHp
+                )
+            ) +
+            ")";
+    }
+
+    if (action) {
+        action.textContent =
+            getMobileMineActionText_STEP486();
+    }
+
+    if (last) {
+        last.textContent =
+            window.__mobileMineLastLog_STEP486
+                ? (
+                    "直前：" +
+                    window.__mobileMineLastLog_STEP486
+                )
+                : "直前：探索開始";
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// ミニマップを触った時だけ濃くする。
+// 既存4-74のクリック拡大処理はそのまま残す。
+// ---------------------------------------------------------------------------
+function bindMobileMiniMapFocus_STEP487() {
+    if (
+        !minimapElement ||
+        minimapElement
+            .dataset
+            .mobileFocusBoundStep487 ===
+            "1"
+    ) {
+        return;
+    }
+
+    minimapElement
+        .dataset
+        .mobileFocusBoundStep487 =
+        "1";
+
+    function focusOn() {
+        minimapElement.classList.add(
+            "mobileMiniMapFocus_STEP487"
+        );
+    }
+
+    function focusOff() {
+        setTimeout(
+            function() {
+                if (
+                    minimapElement
+                ) {
+                    minimapElement.classList.remove(
+                        "mobileMiniMapFocus_STEP487"
+                    );
+                }
+            },
+            700
+        );
+    }
+
+    minimapElement.addEventListener(
+        "touchstart",
+        focusOn,
+        {
+            passive: true
+        }
+    );
+
+    minimapElement.addEventListener(
+        "touchend",
+        focusOff,
+        {
+            passive: true
+        }
+    );
+
+    minimapElement.addEventListener(
+        "pointerdown",
+        focusOn
+    );
+
+    minimapElement.addEventListener(
+        "pointerup",
+        focusOff
+    );
+}
+
+
+// ---------------------------------------------------------------------------
+// STEP4-86/85の更新フックへ接続
+// ---------------------------------------------------------------------------
+const _step487_updateMobileMineHud =
+    updateMobileMineHud_STEP486;
+
+updateMobileMineHud_STEP486 =
+    function() {
+        var result =
+            _step487_updateMobileMineHud();
+
+        updateMobileExploreLayout_STEP487();
+
+        bindMobileMiniMapFocus_STEP487();
+
+        return result;
+    };
+
+
+const _step487_refreshMobilePrimaryUI =
+    refreshMobilePrimaryUI_STEP485;
+
+refreshMobilePrimaryUI_STEP485 =
+    function() {
+        var result =
+            _step487_refreshMobilePrimaryUI();
+
+        updateMobileExploreLayout_STEP487();
+
+        bindMobileMiniMapFocus_STEP487();
+
+        return result;
+    };
+
+
+// 拠点へ戻った時は固定コントローラーを確実に隠す。
+const _step487_showBase =
+    showBase;
+
+showBase =
+    function(message) {
+        var result =
+            _step487_showBase(
+                message
+            );
+
+        document.body.classList.remove(
+            "mobileExplore487"
+        );
+
+        var layout =
+            document.getElementById(
+                "mobileExploreLayout_STEP487"
+            );
+
+        if (layout) {
+            layout.style.display =
+                "none";
+        }
+
+        var dock =
+            document.getElementById(
+                "mobileControllerDock_STEP487"
+            );
+
+        if (dock) {
+            dock.style.display =
+                "none";
+        }
+
+        return result;
+    };
+
+
+// 探索開始直後に新レイアウトへ。
+const _step487_hideBase =
+    hideBase;
+
+hideBase =
+    function() {
+        var result =
+            _step487_hideBase();
+
+        setTimeout(
+            function() {
+                updateMobileExploreLayout_STEP487();
+                bindMobileMiniMapFocus_STEP487();
+            },
+            0
+        );
+
+        return result;
+    };
+
+
+ensureMobileExploreLayoutStyle_STEP487();
+
+setTimeout(
+    function() {
+        updateMobileExploreLayout_STEP487();
+        bindMobileMiniMapFocus_STEP487();
+    },
+    0
+);
+
