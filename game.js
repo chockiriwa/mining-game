@@ -46675,6 +46675,7 @@ function ensureBaseRedesignStyle_STEP480() {
 
         .baseNpcTitle_STEP480 {
             position: absolute;
+            display: none !important;
             left: 10px;
             top: 8px;
             z-index: 8;
@@ -46799,7 +46800,7 @@ function ensureBaseRedesignStyle_STEP480() {
         #baseGuilderPanel_STEP480 #baseMinerBubble_STEP439 {
             left: 12px !important;
             right: auto !important;
-            top: 54px !important;
+            top: 16px !important;
             bottom: auto !important;
             width: min(230px, 72%) !important;
             max-width: calc(100% - 24px) !important;
@@ -47403,20 +47404,8 @@ function buildBaseRedesign_STEP480() {
     guilder.className =
         "baseNpcPanel_STEP480";
 
-    var guilderTitle =
-        document.createElement(
-            "div"
-        );
-
-    guilderTitle.className =
-        "baseNpcTitle_STEP480";
-
-    guilderTitle.textContent =
-        "ギルダー";
-
-    guilder.appendChild(
-        guilderTitle
-    );
+    // 左上の「ギルダー」ラベルは撤去。
+    // 名前表示は下の会話欄だけに統一する。
 
     var seria =
         document.createElement(
