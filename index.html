@@ -207,16 +207,14 @@
         // ================================================================
         // GitHub Pages / ホーム画面Webアプリ 更新確認付き起動
         //
-        // cache:"no-cache":
-        // ・毎回サーバーへ更新確認する
-        // ・変更がなければ保存済みキャッシュを再利用できる
-        // ・Date.now()方式のように毎回game.js全体を別URL扱いにしない
+        // game.jsは毎回サーバーへ再検証。
+        // 変更がなければキャッシュを再利用し、
+        // 更新があれば新しいgame.jsを取得する。
         // ================================================================
         (function () {
             const gameRoot =
                 document.querySelector("main.game");
 
-            // game.js起動前の古いプロトタイプ画面を見せない。
             if (gameRoot) {
                 gameRoot.style.visibility = "hidden";
             }
@@ -225,7 +223,8 @@
                 document.createElement("div");
 
             loading.id = "gameBootLoading";
-            loading.textContent = "ゲームを読み込んでいます…";
+            loading.textContent =
+                "ゲームを読み込んでいます…";
 
             Object.assign(
                 loading.style,
@@ -252,21 +251,41 @@
                 loading
             );
 
+            let finished = false;
+
             function finishBoot() {
+                if (finished) {
+                    return;
+                }
+
+                // game.jsのbootstrap完了まで待つ。
+                if (
+                    !window.__miningGameBootstrapped_STEP489 ||
+                    !document.getElementById("baseOverlay")
+                ) {
+                    setTimeout(
+                        finishBoot,
+                        20
+                    );
+                    return;
+                }
+
+                finished = true;
+
                 if (gameRoot) {
                     gameRoot.style.visibility = "";
                 }
 
-                if (loading) {
-                    loading.remove();
-                }
+                loading.remove();
             }
 
             function showBootError(error) {
                 console.error(error);
 
                 loading.textContent =
-                    "ゲームデータを読み込めませんでした。\n通信を確認して、もう一度起動してください。";
+                    "ゲームデータを読み込めませんでした。
+" +
+                    "通信を確認して、もう一度起動してください。";
 
                 loading.style.whiteSpace =
                     "pre-line";
@@ -302,8 +321,7 @@
                                 "script"
                             );
 
-                        script.src =
-                            url;
+                        script.src = url;
 
                         script.onload =
                             function () {
@@ -311,11 +329,7 @@
                                     url
                                 );
 
-                                // game.jsのbootstrap/showBaseまで実行された後に表示。
-                                setTimeout(
-                                    finishBoot,
-                                    0
-                                );
+                                finishBoot();
                             };
 
                         script.onerror =

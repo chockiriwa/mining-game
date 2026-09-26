@@ -2891,20 +2891,64 @@ function bootstrapGame() {
 }
 
 
-if (
-    document.readyState ===
-    "loading"
-) {
+// ============================================================================
+// STEP 4-89：起動順修正
+// ----------------------------------------------------------------------------
+// GitHub Pagesの更新確認ローダーからgame.jsを動的読込した場合、
+// document.readyStateが既に"complete"になっている。
+// 旧処理ではファイル途中でbootstrapGame()が即実行され、
+// 後半STEPの定義・上書きが完了する前にゲームが起動していた。
+// 必ず「game.js全体の評価完了後」にbootstrapする。
+// ============================================================================
+(function scheduleBootstrap_STEP489() {
+    if (
+        window.__miningGameBootstrapScheduled_STEP489
+    ) {
+        return;
+    }
 
-    document.addEventListener(
-        "DOMContentLoaded",
-        bootstrapGame
-    );
+    window.__miningGameBootstrapScheduled_STEP489 =
+        true;
 
-} else {
+    function runBootstrap_STEP489() {
+        if (
+            window.__miningGameBootstrapped_STEP489
+        ) {
+            return;
+        }
 
-    bootstrapGame();
-}
+        window.__miningGameBootstrapped_STEP489 =
+            true;
+
+        bootstrapGame();
+    }
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+        document.addEventListener(
+            "DOMContentLoaded",
+            function() {
+                // DOMContentLoadedでも、そのイベント処理の現在スタックを抜けてから起動。
+                setTimeout(
+                    runBootstrap_STEP489,
+                    0
+                );
+            },
+            {
+                once: true
+            }
+        );
+    } else {
+        // 動的script読込時はこちら。
+        // setTimeoutに送ることでgame.js末尾まで評価してから起動する。
+        setTimeout(
+            runBootstrap_STEP489,
+            0
+        );
+    }
+})();
 
 
 // ========================================
