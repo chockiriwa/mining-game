@@ -50114,3 +50114,1235 @@ setTimeout(
     0
 );
 
+
+
+// ============================================================================
+// STEP 4-85：スマホ優先UI / iPhone SE3基準 / 十字キー中央に「決定」
+// ----------------------------------------------------------------------------
+// 基準テスト端末：iPhone SE (第3世代) portrait 375 × 667 CSS px
+// ・PC優先ではなくスマホ縦持ちを主基準にする
+// ・visualViewportを使いSafariのアドレスバー伸縮にも追従
+// ・探索マップを端末幅に合わせて縮小
+// ・方向キーを3×3の十字配置へ整理
+// ・中央に決定キーを追加
+// ・決定キー = Enter相当（足元操作 → 採掘）
+// ・確認ダイアログ表示中は可能なら「決定」ボタンを実行
+// ============================================================================
+
+
+// ---------------------------------------------------------------------------
+// モバイル判定 / 実表示領域
+// ---------------------------------------------------------------------------
+function isMobilePrimary_STEP485() {
+    var width =
+        window.visualViewport
+            ? window.visualViewport.width
+            : window.innerWidth;
+
+    return Number(width || 0) <= 600;
+}
+
+
+function updateMobileViewport_STEP485() {
+    var viewport =
+        window.visualViewport;
+
+    var width =
+        viewport
+            ? viewport.width
+            : window.innerWidth;
+
+    var height =
+        viewport
+            ? viewport.height
+            : window.innerHeight;
+
+    width =
+        Math.max(
+            320,
+            Number(width || 375)
+        );
+
+    height =
+        Math.max(
+            480,
+            Number(height || 667)
+        );
+
+    document.documentElement.style.setProperty(
+        "--mobile-viewport-w-step485",
+        width + "px"
+    );
+
+    document.documentElement.style.setProperty(
+        "--mobile-viewport-h-step485",
+        height + "px"
+    );
+
+    document.documentElement.classList.toggle(
+        "mobilePrimary_STEP485",
+        width <= 600
+    );
+}
+
+
+// ---------------------------------------------------------------------------
+// iPhone SE3を基準にしたスマホ優先CSS
+// ---------------------------------------------------------------------------
+function ensureMobilePrimaryStyle_STEP485() {
+    if (
+        document.getElementById(
+            "mobilePrimaryStyle_STEP485"
+        )
+    ) {
+        return;
+    }
+
+    var style =
+        document.createElement(
+            "style"
+        );
+
+    style.id =
+        "mobilePrimaryStyle_STEP485";
+
+    style.textContent = `
+        :root {
+            --mobile-se3-width-step485: 375px;
+            --mobile-se3-height-step485: 667px;
+            --mobile-viewport-w-step485: 375px;
+            --mobile-viewport-h-step485: 667px;
+        }
+
+        /* ================================================================
+           探索操作：3×3十字キー
+           ================================================================ */
+
+        .mobileControlHost_STEP485 {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 10px !important;
+            flex-wrap: wrap !important;
+            box-sizing: border-box !important;
+        }
+
+        #mobileDpad_STEP485 {
+            display: grid !important;
+            grid-template-columns: repeat(3, 52px) !important;
+            grid-template-rows: repeat(3, 52px) !important;
+            gap: 4px !important;
+            width: max-content !important;
+            flex: 0 0 auto !important;
+            touch-action: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+
+        #mobileDpad_STEP485 [data-move],
+        #mobileConfirmButton_STEP485 {
+            width: 52px !important;
+            min-width: 52px !important;
+            max-width: 52px !important;
+            height: 52px !important;
+            min-height: 52px !important;
+            max-height: 52px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 9px !important;
+            font-size: 18px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            box-sizing: border-box !important;
+            touch-action: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
+        #mobileDpad_STEP485 [data-move="up"] {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        #mobileDpad_STEP485 [data-move="left"] {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        #mobileConfirmButton_STEP485 {
+            grid-column: 2;
+            grid-row: 2;
+            color: #ffe6a0 !important;
+            border-color: #a8873d !important;
+            background:
+                linear-gradient(
+                    180deg,
+                    #51431f,
+                    #292315
+                ) !important;
+            font-size: 12px !important;
+            letter-spacing: .04em !important;
+        }
+
+        #mobileDpad_STEP485 [data-move="right"] {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        #mobileDpad_STEP485 [data-move="down"] {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        #mobileConfirmButton_STEP485:active {
+            transform: scale(.95);
+            filter: brightness(1.18);
+        }
+
+
+        /* ================================================================
+           スマホ縦持ちを主基準
+           ================================================================ */
+
+        @media (max-width: 600px) {
+            html,
+            body {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+
+            body {
+                margin: 0 !important;
+                padding:
+                    max(4px, env(safe-area-inset-top))
+                    max(4px, env(safe-area-inset-right))
+                    max(4px, env(safe-area-inset-bottom))
+                    max(4px, env(safe-area-inset-left))
+                    !important;
+                font-size: 12px !important;
+            }
+
+            button {
+                min-height: 42px !important;
+                font-size: 12px;
+            }
+
+            /* ------------------------------------------------------------
+               探索画面
+               ------------------------------------------------------------ */
+
+            #playerStatus {
+                margin: 3px 0 5px !important;
+                padding: 5px 7px !important;
+                font-size: 10.5px !important;
+                line-height: 1.35 !important;
+            }
+
+            #importantSignalBar_STEP456 {
+                min-height: 30px !important;
+                margin-bottom: 4px !important;
+                padding: 4px 7px !important;
+            }
+
+            #importantSignalLabel_STEP456 {
+                font-size: 9px !important;
+            }
+
+            #importantSignalLatest_STEP456 {
+                font-size: 10px !important;
+            }
+
+            #importantSignalHint_STEP456 {
+                display: none !important;
+            }
+
+            #map {
+                width:
+                    min(
+                        calc(100vw - 12px),
+                        340px
+                    ) !important;
+                max-width:
+                    min(
+                        calc(100vw - 12px),
+                        340px
+                    ) !important;
+                min-width: 0 !important;
+                height: auto;
+                max-height: none !important;
+                margin:
+                    0 auto !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+            }
+
+            #map .tile {
+                min-width: 0 !important;
+                min-height: 0 !important;
+                width: auto !important;
+                height: auto !important;
+                aspect-ratio: 1 / 1;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 0 !important;
+                line-height: 1 !important;
+                font-size:
+                    clamp(
+                        8px,
+                        2.45vw,
+                        11px
+                    ) !important;
+                overflow: hidden !important;
+            }
+
+            #minimap {
+                width: 94px !important;
+                max-width: 94px !important;
+                max-height: 94px !important;
+                padding: 2px !important;
+                margin:
+                    5px auto !important;
+                box-sizing: border-box !important;
+            }
+
+            #minimap canvas {
+                width: 90px !important;
+                height: 90px !important;
+                max-width: 90px !important;
+                max-height: 90px !important;
+            }
+
+            #log {
+                max-height: 76px !important;
+                min-height: 0 !important;
+                margin-top: 5px !important;
+                padding: 5px 7px !important;
+                font-size: 10px !important;
+                line-height: 1.35 !important;
+                overflow-y: auto !important;
+                touch-action: pan-y !important;
+            }
+
+            .mobileControlHost_STEP485 {
+                gap: 7px !important;
+                flex-wrap: nowrap !important;
+                margin-top: 5px !important;
+            }
+
+            #mobileDpad_STEP485 {
+                grid-template-columns:
+                    repeat(3, 46px)
+                    !important;
+                grid-template-rows:
+                    repeat(3, 46px)
+                    !important;
+                gap: 3px !important;
+            }
+
+            #mobileDpad_STEP485 [data-move],
+            #mobileConfirmButton_STEP485 {
+                width: 46px !important;
+                min-width: 46px !important;
+                max-width: 46px !important;
+                height: 46px !important;
+                min-height: 46px !important;
+                max-height: 46px !important;
+                border-radius: 8px !important;
+            }
+
+            #mobileDpad_STEP485 [data-move] {
+                font-size: 17px !important;
+            }
+
+            #mobileConfirmButton_STEP485 {
+                font-size: 11px !important;
+            }
+
+            #movementExtraActions_STEP477 {
+                width:
+                    min(
+                        174px,
+                        calc(100% - 150px)
+                    ) !important;
+                max-width: 174px !important;
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                gap: 6px !important;
+                margin: 0 !important;
+                padding:
+                    0 0 0 7px
+                    !important;
+                border-top: 0 !important;
+                border-left:
+                    1px solid
+                    rgba(120,135,145,.35)
+                    !important;
+            }
+
+            #movementExtraActions_STEP477
+            #miningButton_STEP464,
+            #movementExtraActions_STEP477
+            #inventoryButton {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                height: 44px !important;
+                min-height: 44px !important;
+                padding: 0 5px !important;
+                margin: 0 !important;
+                font-size: 11px !important;
+            }
+
+            #explorationActionBar {
+                margin: 4px 0 !important;
+                padding: 4px !important;
+            }
+
+
+            /* ------------------------------------------------------------
+               拠点：375px幅で1列、縦スクロール前提
+               ------------------------------------------------------------ */
+
+            #baseOverlay {
+                padding:
+                    max(4px, env(safe-area-inset-top))
+                    4px
+                    max(4px, env(safe-area-inset-bottom))
+                    4px
+                    !important;
+                box-sizing: border-box !important;
+            }
+
+            #baseOverlay > .baseRedesignBox_STEP480 {
+                width:
+                    calc(100vw - 8px)
+                    !important;
+                max-width: none !important;
+                height:
+                    calc(
+                        var(
+                            --mobile-viewport-h-step485,
+                            667px
+                        ) - 8px
+                    )
+                    !important;
+                max-height: none !important;
+                border-radius: 6px !important;
+            }
+
+            #baseMainBody_STEP480 {
+                padding: 5px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #baseTickerArea_STEP480 {
+                margin-bottom: 5px !important;
+            }
+
+            #baseTickerBoard {
+                height: 34px !important;
+            }
+
+            #baseTickerText {
+                font-size: 11px !important;
+            }
+
+            #baseTickerArea_STEP480 #baseMessage {
+                padding: 4px 6px !important;
+                min-height: 18px !important;
+                font-size: 9.5px !important;
+            }
+
+            #baseMainGrid_STEP480 {
+                grid-template-columns: 1fr !important;
+                gap: 6px !important;
+            }
+
+            #baseLeftColumn_STEP480,
+            #baseRightColumn_STEP480 {
+                gap: 6px !important;
+            }
+
+            #baseLeftColumn_STEP480 {
+                grid-template-rows:
+                    205px
+                    minmax(70px, auto)
+                    !important;
+            }
+
+            #baseGuilderPanel_STEP480 {
+                height: 205px !important;
+                min-height: 205px !important;
+                flex-basis: 205px !important;
+            }
+
+            #baseGuilderPanel_STEP480
+            #baseMinerImage_STEP439 {
+                width:
+                    min(
+                        76%,
+                        205px
+                    ) !important;
+                max-height: 200px !important;
+            }
+
+            #baseGuilderDialogue_STEP481 {
+                min-height: 70px !important;
+                padding: 7px 9px !important;
+            }
+
+            #baseGuilderDialogueLabel_STEP481 {
+                margin-bottom: 3px !important;
+                font-size: 9px !important;
+            }
+
+            #baseGuilderDialogueText_STEP481 {
+                min-height: 32px !important;
+                font-size: 10.5px !important;
+                line-height: 1.45 !important;
+            }
+
+            #baseRightColumn_STEP480
+            #depthObservationBox {
+                min-height: 72px !important;
+                padding: 7px !important;
+                font-size: 10px !important;
+            }
+
+            #baseFacilityPanel_STEP480 {
+                padding: 6px !important;
+            }
+
+            #baseFacilityButtons_STEP480 {
+                min-height: 174px !important;
+                grid-template-columns:
+                    repeat(
+                        4,
+                        minmax(0, 1fr)
+                    )
+                    !important;
+                grid-template-rows:
+                    repeat(
+                        5,
+                        32px
+                    )
+                    !important;
+                gap: 3px !important;
+            }
+
+            #baseFacilityButtons_STEP480
+            > button {
+                min-height: 32px !important;
+                height: 32px !important;
+                padding: 2px 1px !important;
+                font-size: 9px !important;
+                border-radius: 4px !important;
+            }
+
+            #baseControlPanel_STEP480 {
+                padding: 6px !important;
+            }
+
+            #baseFieldSelectorTitle_STEP482 {
+                margin-bottom: 5px !important;
+                font-size: 10px !important;
+            }
+
+            #baseFieldRow_STEP482,
+            #baseFieldPointRow_STEP482 {
+                grid-template-columns:
+                    38px
+                    minmax(0, 1fr)
+                    38px
+                    !important;
+                gap: 4px !important;
+            }
+
+            #baseFieldRow_STEP482 > button,
+            #baseFieldPointRow_STEP482 > button {
+                width: 38px !important;
+                min-width: 38px !important;
+                height: 38px !important;
+                min-height: 38px !important;
+            }
+
+            #baseFieldName_STEP482 {
+                min-height: 38px !important;
+                padding: 4px 6px !important;
+                font-size: 14px !important;
+            }
+
+            #baseFieldPointName_STEP482 {
+                min-height: 34px !important;
+                font-size: 10px !important;
+            }
+
+            #baseFieldInfo_STEP482 {
+                min-height: 14px !important;
+                margin-top: 4px !important;
+                font-size: 9px !important;
+            }
+
+            #baseFieldStart_STEP482 {
+                width: 100% !important;
+                min-width: 0 !important;
+                min-height: 40px !important;
+                margin-top: 5px !important;
+                font-size: 11px !important;
+            }
+
+
+            /* ------------------------------------------------------------
+               施設/一覧/確認画面
+               ------------------------------------------------------------ */
+
+            #shopWindow,
+            #warehouseWindow,
+            #inventoryWindow,
+            #workshopWindow,
+            #archiveWindow,
+            #devWindow,
+            #settingsWindow_STEP430,
+            #baseStatusWindow_STEP480 {
+                width:
+                    calc(100vw - 10px)
+                    !important;
+                max-width: none !important;
+                max-height:
+                    calc(
+                        var(
+                            --mobile-viewport-h-step485,
+                            667px
+                        ) - 14px
+                    )
+                    !important;
+                padding: 9px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                box-sizing: border-box !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            [id$="Overlay"] {
+                padding: 5px !important;
+                box-sizing: border-box !important;
+            }
+
+            .windowAccordionHeader_STEP477 {
+                margin: 5px 0 !important;
+                padding: 7px 30px 7px 8px !important;
+                font-size: 11px !important;
+            }
+
+            .laterCraftButton_STEP476,
+            #shopWindow button,
+            #warehouseWindow button,
+            #inventoryWindow button,
+            #workshopWindow button,
+            #archiveWindow button,
+            #settingsWindow_STEP430 button {
+                min-height: 40px !important;
+            }
+        }
+
+
+        /* iPhone SE3横持ち等：縦を節約 */
+        @media
+            (orientation: landscape)
+            and (max-height: 430px) {
+
+            #mobileDpad_STEP485 {
+                grid-template-columns:
+                    repeat(3, 40px)
+                    !important;
+                grid-template-rows:
+                    repeat(3, 40px)
+                    !important;
+            }
+
+            #mobileDpad_STEP485 [data-move],
+            #mobileConfirmButton_STEP485 {
+                width: 40px !important;
+                min-width: 40px !important;
+                max-width: 40px !important;
+                height: 40px !important;
+                min-height: 40px !important;
+                max-height: 40px !important;
+            }
+
+            #log {
+                max-height: 54px !important;
+            }
+
+            #map {
+                width:
+                    min(
+                        56vh,
+                        320px
+                    ) !important;
+                max-width:
+                    min(
+                        56vh,
+                        320px
+                    ) !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// ---------------------------------------------------------------------------
+// 決定キー
+// ---------------------------------------------------------------------------
+function clickVisiblePrimaryButton_STEP485() {
+    var buttons =
+        Array.from(
+            document.querySelectorAll(
+                ".confirm-primary"
+            )
+        );
+
+    for (
+        var i = buttons.length - 1;
+        i >= 0;
+        i--
+    ) {
+        var button =
+            buttons[i];
+
+        if (
+            button.disabled
+        ) {
+            continue;
+        }
+
+        var rects =
+            button.getClientRects();
+
+        if (
+            !rects ||
+            rects.length === 0
+        ) {
+            continue;
+        }
+
+        var style =
+            window.getComputedStyle(
+                button
+            );
+
+        if (
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            Number(style.opacity || 1) === 0
+        ) {
+            continue;
+        }
+
+        button.click();
+
+        return true;
+    }
+
+    return false;
+}
+
+
+function activateMobileConfirm_STEP485() {
+    if (
+        game.baseOpen ||
+        game.dead
+    ) {
+        return false;
+    }
+
+    stopKeyRepeat();
+
+    // 確認画面が開いている場合は、その「決定」を優先。
+    if (
+        game.stairConfirmOpen ||
+        game.returnConfirmOpen ||
+        game.featherConfirmOpen ||
+        game.deathWarningOpen
+    ) {
+        if (
+            clickVisiblePrimaryButton_STEP485()
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // インベントリなど別窓中に背後を誤操作しない。
+    if (
+        game.inventoryOpen ||
+        game.warehouseOpen ||
+        game.shopOpen ||
+        game.forgeOpen ||
+        game.baseUpgradeOpen ||
+        game.workshopOpen ||
+        game.archiveOpen ||
+        game.devOpen
+    ) {
+        return false;
+    }
+
+    // Enterキーと同じ順序：
+    // まず足元の特殊地点、次に鉱石。
+    if (
+        interactWithCurrentTile()
+    ) {
+        return true;
+    }
+
+    var ore =
+        getOreAt(
+            game.player.x,
+            game.player.y
+        );
+
+    if (
+        ore &&
+        ore.discovered
+    ) {
+        mineOre(
+            ore
+        );
+
+        return true;
+    }
+
+    addLog(
+        "ここには操作できるものがありません。"
+    );
+
+    return false;
+}
+
+
+// ---------------------------------------------------------------------------
+// 方向キーを専用3×3パッドへ再配置。
+// STEP4-77の採掘/インベントリも同じ操作エリア内に維持。
+// ---------------------------------------------------------------------------
+function setupMobileDpad_STEP485() {
+    if (
+        game.baseOpen
+    ) {
+        return;
+    }
+
+    var moveButtons =
+        Array.from(
+            document.querySelectorAll(
+                "[data-move]"
+            )
+        );
+
+    if (
+        moveButtons.length < 4
+    ) {
+        return;
+    }
+
+    var existingDpad =
+        document.getElementById(
+            "mobileDpad_STEP485"
+        );
+
+    var host =
+        existingDpad &&
+        existingDpad.parentElement
+            ? existingDpad.parentElement
+            : moveButtons[0].parentElement;
+
+    if (!host) {
+        return;
+    }
+
+    host.classList.add(
+        "mobileControlHost_STEP485"
+    );
+
+    var dpad =
+        existingDpad;
+
+    if (!dpad) {
+        dpad =
+            document.createElement(
+                "div"
+            );
+
+        dpad.id =
+            "mobileDpad_STEP485";
+
+        host.insertBefore(
+            dpad,
+            host.firstChild
+        );
+    }
+
+    var order = [
+        "up",
+        "left",
+        "right",
+        "down"
+    ];
+
+    order.forEach(
+        function(direction) {
+            var button =
+                moveButtons.find(
+                    function(item) {
+                        return (
+                            item.dataset.move ===
+                            direction
+                        );
+                    }
+                );
+
+            if (
+                button &&
+                button.parentElement !== dpad
+            ) {
+                dpad.appendChild(
+                    button
+                );
+            }
+        }
+    );
+
+    var confirm =
+        document.getElementById(
+            "mobileConfirmButton_STEP485"
+        );
+
+    if (!confirm) {
+        confirm =
+            document.createElement(
+                "button"
+            );
+
+        confirm.id =
+            "mobileConfirmButton_STEP485";
+
+        confirm.type =
+            "button";
+
+        confirm.textContent =
+            "決定";
+
+        confirm.title =
+            "決定 / 採掘 / 足元を調べる";
+
+        confirm.setAttribute(
+            "aria-label",
+            "決定・採掘・足元を調べる"
+        );
+
+        confirm.onclick =
+            function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                activateMobileConfirm_STEP485();
+            };
+
+        confirm.addEventListener(
+            "touchstart",
+            function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                activateMobileConfirm_STEP485();
+            },
+            {
+                passive: false
+            }
+        );
+    }
+
+    if (
+        confirm.parentElement !== dpad
+    ) {
+        dpad.appendChild(
+            confirm
+        );
+    }
+
+    var extra =
+        document.getElementById(
+            "movementExtraActions_STEP477"
+        );
+
+    if (
+        !extra ||
+        extra.parentElement !== host
+    ) {
+        if (!extra) {
+            extra =
+                document.createElement(
+                    "div"
+                );
+
+            extra.id =
+                "movementExtraActions_STEP477";
+        }
+
+        host.appendChild(
+            extra
+        );
+    }
+
+    var mining =
+        document.getElementById(
+            "miningButton_STEP464"
+        );
+
+    var inventory =
+        document.getElementById(
+            "inventoryButton"
+        );
+
+    if (
+        mining &&
+        mining.parentElement !== extra
+    ) {
+        extra.appendChild(
+            mining
+        );
+    }
+
+    if (
+        inventory &&
+        inventory.parentElement !== extra
+    ) {
+        extra.appendChild(
+            inventory
+        );
+    }
+}
+
+
+// STEP4-77の再配置処理をスマホ優先版へ置換。
+moveExplorationActionsToMovementBar_STEP477 =
+    function() {
+        setupMobileDpad_STEP485();
+    };
+
+
+// ---------------------------------------------------------------------------
+// 第2～5層の固定24pxタイルをスマホでは画面幅に自動縮小。
+// PCでは従来の24px固定をそのまま使う。
+// ---------------------------------------------------------------------------
+const _step485_applyFixedLaterLayerMapGrid =
+    applyFixedLaterLayerMapGrid;
+
+applyFixedLaterLayerMapGrid =
+    function(
+        cols,
+        rows
+    ) {
+        if (
+            !isMobilePrimary_STEP485()
+        ) {
+            return _step485_applyFixedLaterLayerMapGrid(
+                cols,
+                rows
+            );
+        }
+
+        if (!mapElement) {
+            return;
+        }
+
+        var viewport =
+            window.visualViewport;
+
+        var availableWidth =
+            Math.min(
+                340,
+                Math.max(
+                    300,
+                    (
+                        viewport
+                            ? viewport.width
+                            : window.innerWidth
+                    ) - 12
+                )
+            );
+
+        var tileSize =
+            Math.max(
+                12,
+                Math.floor(
+                    availableWidth /
+                    Math.max(
+                        1,
+                        Number(cols || 1)
+                    )
+                )
+            );
+
+        var width =
+            Number(cols || 1) *
+            tileSize;
+
+        var height =
+            Number(rows || 1) *
+            tileSize;
+
+        mapElement.style.gridTemplateColumns =
+            "repeat(" +
+            cols +
+            ", " +
+            tileSize +
+            "px)";
+
+        mapElement.style.gridAutoRows =
+            tileSize +
+            "px";
+
+        mapElement.style.width =
+            width +
+            "px";
+
+        mapElement.style.height =
+            height +
+            "px";
+
+        mapElement.style.minWidth =
+            "0";
+
+        mapElement.style.maxWidth =
+            "100%";
+    };
+
+
+// ---------------------------------------------------------------------------
+// 再生成・回転・Safari表示領域変更に追従
+// ---------------------------------------------------------------------------
+function refreshMobilePrimaryUI_STEP485() {
+    updateMobileViewport_STEP485();
+    ensureMobilePrimaryStyle_STEP485();
+
+    if (
+        !game.baseOpen
+    ) {
+        setupMobileDpad_STEP485();
+    }
+}
+
+
+if (
+    !window.__mobilePrimaryEvents_STEP485
+) {
+    window.__mobilePrimaryEvents_STEP485 =
+        true;
+
+    window.addEventListener(
+        "resize",
+        function() {
+            setTimeout(
+                refreshMobilePrimaryUI_STEP485,
+                20
+            );
+        },
+        {
+            passive: true
+        }
+    );
+
+    window.addEventListener(
+        "orientationchange",
+        function() {
+            setTimeout(
+                refreshMobilePrimaryUI_STEP485,
+                100
+            );
+        },
+        {
+            passive: true
+        }
+    );
+
+    if (
+        window.visualViewport
+    ) {
+        window.visualViewport.addEventListener(
+            "resize",
+            function() {
+                setTimeout(
+                    refreshMobilePrimaryUI_STEP485,
+                    20
+                );
+            },
+            {
+                passive: true
+            }
+        );
+    }
+}
+
+
+// 探索UIが再配置される既存フックへ接続。
+const _step485_placeInventoryBelowLog =
+    placeInventoryBelowLog_STEP417;
+
+placeInventoryBelowLog_STEP417 =
+    function() {
+        var result =
+            _step485_placeInventoryBelowLog();
+
+        setTimeout(
+            setupMobileDpad_STEP485,
+            0
+        );
+
+        return result;
+    };
+
+placeInventoryButtonForExploration =
+    placeInventoryBelowLog_STEP417;
+
+applyLayer2InventoryButtonPosition =
+    placeInventoryBelowLog_STEP417;
+
+
+// 拠点を閉じて探索へ入った直後にも十字キーを保証。
+const _step485_hideBase =
+    hideBase;
+
+hideBase =
+    function() {
+        var result =
+            _step485_hideBase();
+
+        setTimeout(
+            refreshMobilePrimaryUI_STEP485,
+            0
+        );
+
+        return result;
+    };
+
+
+ensureMobilePrimaryStyle_STEP485();
+updateMobileViewport_STEP485();
+
+setTimeout(
+    refreshMobilePrimaryUI_STEP485,
+    0
+);
+
