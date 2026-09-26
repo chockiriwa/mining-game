@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>鉱山探索</title>
 
-    <script>
-        // GitHub Pages / ホーム画面Webアプリの古いキャッシュ対策。
-        (function () {
-            const link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = "style.css?v=" + Date.now();
-            document.head.appendChild(link);
-        })();
-    </script>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -212,13 +204,141 @@
 
     <!-- ゲーム処理 -->
     <script>
-        // GitHub Pages / ホーム画面Webアプリの古いキャッシュ対策。
-        // 今後の更新は game.js の上書きだけでOK。
+        // ================================================================
+        // GitHub Pages / ホーム画面Webアプリ 更新確認付き起動
+        //
+        // cache:"no-cache":
+        // ・毎回サーバーへ更新確認する
+        // ・変更がなければ保存済みキャッシュを再利用できる
+        // ・Date.now()方式のように毎回game.js全体を別URL扱いにしない
+        // ================================================================
         (function () {
-            const script = document.createElement("script");
-            script.src = "game.js?v=" + Date.now();
-            script.async = false;
-            document.body.appendChild(script);
+            const gameRoot =
+                document.querySelector("main.game");
+
+            // game.js起動前の古いプロトタイプ画面を見せない。
+            if (gameRoot) {
+                gameRoot.style.visibility = "hidden";
+            }
+
+            const loading =
+                document.createElement("div");
+
+            loading.id = "gameBootLoading";
+            loading.textContent = "ゲームを読み込んでいます…";
+
+            Object.assign(
+                loading.style,
+                {
+                    position: "fixed",
+                    inset: "0",
+                    zIndex: "999999",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "24px",
+                    boxSizing: "border-box",
+                    background: "#111318",
+                    color: "#e9edf5",
+                    fontFamily:
+                        "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans-serif",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    textAlign: "center"
+                }
+            );
+
+            document.body.appendChild(
+                loading
+            );
+
+            function finishBoot() {
+                if (gameRoot) {
+                    gameRoot.style.visibility = "";
+                }
+
+                if (loading) {
+                    loading.remove();
+                }
+            }
+
+            function showBootError(error) {
+                console.error(error);
+
+                loading.textContent =
+                    "ゲームデータを読み込めませんでした。\n通信を確認して、もう一度起動してください。";
+
+                loading.style.whiteSpace =
+                    "pre-line";
+            }
+
+            fetch(
+                "game.js",
+                {
+                    cache: "no-cache"
+                }
+            )
+                .then(
+                    function (response) {
+                        if (!response.ok) {
+                            throw new Error(
+                                "game.js HTTP " +
+                                response.status
+                            );
+                        }
+
+                        return response.blob();
+                    }
+                )
+                .then(
+                    function (blob) {
+                        const url =
+                            URL.createObjectURL(
+                                blob
+                            );
+
+                        const script =
+                            document.createElement(
+                                "script"
+                            );
+
+                        script.src =
+                            url;
+
+                        script.onload =
+                            function () {
+                                URL.revokeObjectURL(
+                                    url
+                                );
+
+                                // game.jsのbootstrap/showBaseまで実行された後に表示。
+                                setTimeout(
+                                    finishBoot,
+                                    0
+                                );
+                            };
+
+                        script.onerror =
+                            function () {
+                                URL.revokeObjectURL(
+                                    url
+                                );
+
+                                showBootError(
+                                    new Error(
+                                        "game.js execution failed"
+                                    )
+                                );
+                            };
+
+                        document.body.appendChild(
+                            script
+                        );
+                    }
+                )
+                .catch(
+                    showBootError
+                );
         })();
     </script>
 
