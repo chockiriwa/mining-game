@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -8,7 +7,6 @@
 
     <script>
         // GitHub Pages / ホーム画面Webアプリの古いキャッシュ対策。
-        // 毎回異なるURLとしてstyle.cssを取得する。
         (function () {
             const link = document.createElement("link");
             link.rel = "stylesheet";
@@ -215,7 +213,7 @@
     <!-- ゲーム処理 -->
     <script>
         // GitHub Pages / ホーム画面Webアプリの古いキャッシュ対策。
-        // 今後の更新は従来どおり game.js を上書きするだけでよい。
+        // 今後の更新は game.js の上書きだけでOK。
         (function () {
             const script = document.createElement("script");
             script.src = "game.js?v=" + Date.now();
@@ -226,4 +224,3 @@
 
 </body>
 </html>
-```
